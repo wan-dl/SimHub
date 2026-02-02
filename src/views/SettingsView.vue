@@ -1,26 +1,32 @@
 <template>
   <div class="settings-view">
     <div class="header">
-      <n-button text @click="router.back()">
-        <template #icon>
-          <n-icon :component="ArrowBack" />
-        </template>
-      </n-button>
-      <h1>{{ t('settings.title') }}</h1>
-    </div>
-
-    <div class="settings-container">
-      <div class="tabs-header">
-        <div 
-          v-for="tab in tabs" 
-          :key="tab.key"
-          :class="['tab-item', { active: activeTab === tab.key }]"
-          @click="activeTab = tab.key"
-        >
-          {{ tab.label }}
+      <div class="header-left">
+        <n-button text @click="router.back()">
+          <template #icon>
+            <n-icon :component="ArrowBack" />
+          </template>
+        </n-button>
+        <h3>{{ t('settings.title') }}</h3>
+      </div>
+      <div class="header-center">
+        <div class="tabs-header">
+          <div 
+            v-for="tab in tabs" 
+            :key="tab.key"
+            :class="['tab-item', { active: activeTab === tab.key }]"
+            @click="activeTab = tab.key"
+          >
+            {{ tab.label }}
+          </div>
         </div>
       </div>
+      <div class="header-right">
+        <!-- 占位，保持布局平衡 -->
+      </div>
+    </div>
 
+    <div class="settings-content">
       <div class="content">
         <!-- 通用设置 -->
         <div v-if="activeTab === 'general'" class="tab-content">
@@ -227,21 +233,39 @@ const handleAutoSave = async () => {
 .header {
   display: flex;
   align-items: center;
-  gap: 16px;
+  justify-content: space-between;
   padding: 16px 24px;
   border-bottom: 1px solid #e0e0e0;
 }
 
-.header h1 {
-  font-size: 20px;
-  font-weight: 600;
+.header-left {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex: 1;
 }
 
-.settings-container {
+.header-left h3 {
+  font-size: 20px;
+  font-weight: 600;
+  margin: 0;
+}
+
+.header-center {
   display: flex;
-  flex-direction: column;
+  justify-content: center;
+  flex: 1;
+}
+
+.header-right {
+  flex: 1;
+}
+
+.settings-content {
   flex: 1;
   overflow: hidden;
+  display: flex;
+  flex-direction: column;
   align-items: center;
 }
 
@@ -251,8 +275,6 @@ const handleAutoSave = async () => {
   padding: 4px;
   background: #f0f0f0;
   border-radius: 24px;
-  margin: 16px auto;
-  align-self: center;
 }
 
 .tab-item {
@@ -284,6 +306,7 @@ const handleAutoSave = async () => {
   overflow-y: auto;
   width: 100%;
   max-width: 800px;
+  margin-top: 16px;
 }
 
 .tab-content {

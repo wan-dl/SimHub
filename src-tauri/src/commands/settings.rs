@@ -1,10 +1,6 @@
 use serde::{Deserialize, Serialize};
-use std::sync::Mutex;
-use std::collections::HashMap;
-
-lazy_static::lazy_static! {
-    static ref SETTINGS: Mutex<Settings> = Mutex::new(Settings::default());
-}
+use std::fs;
+use std::path::PathBuf;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Settings {
@@ -33,10 +29,51 @@ impl Default for Settings {
     }
 }
 
+fn get_settings_path() -> Result<PathBuf, String> {
+    let config_dir = dirs::config_dir()
+        .ok_or_else(|| "Failed to get config directory".to_string())?;
+    let app_dir = config_dir.join("oh-emulator-manager");
+    
+    // 确保目录存在
+    fs::create_dir_all(&app_dir)
+        .map_err(|e| format!("Failed to create config directory: {}", e))?;
+    
+    Ok(app_dir.join("settings.json"))
+}
+
+fn load_settings_from_file() -> Result<Settings, String> {
+    let settings_path = get_settings_path()?;
+    
+    if !settings_path.exists() {
+        return Ok(Settings::default());
+    }
+    
+    let content = fs::read_to_string(&settings_path)
+        .map_err(|e| format!("Failed to read settings file: {}", e))?;
+    
+    let settings: Settings = serde_json::from_str(&content)
+        .map_err(|e| format!("Failed to parse settings: {}", e))?;
+    
+    Ok(settings)
+}
+
+fn save_settings_to_file(settings: &Settings) -> Result<(), String> {
+    let settings_path = get_settings_path()?;
+    
+    let content = serde_json::to_string_pretty(settings)
+        .map_err(|e| format!("Failed to serialize settings: {}", e))?;
+    
+    fs::write(&settings_path, content)
+        .map_err(|e| format!("Failed to write settings file: {}", e))?;
+    
+    Ok(())
+}
+
 pub fn get_android_home() -> Option<String> {
-    let settings = SETTINGS.lock().ok()?;
-    if !settings.android_home.is_empty() {
-        return Some(settings.android_home.clone());
+    if let Ok(settings) = load_settings_from_file() {
+        if !settings.android_home.is_empty() {
+            return Some(settings.android_home);
+        }
     }
     
     // Fallback to environment variables
@@ -47,7 +84,7 @@ pub fn get_android_home() -> Option<String> {
 
 #[tauri::command]
 pub async fn get_settings() -> Result<Settings, String> {
-    let mut settings = SETTINGS.lock().map_err(|e| e.to_string())?;
+    let mut settings = load_settings_from_file()?;
 
     // Initialize from environment if not set
     if settings.android_home.is_empty() {
@@ -72,12 +109,11 @@ pub async fn get_settings() -> Result<Settings, String> {
         }
     }
 
-    Ok(settings.clone())
+    Ok(settings)
 }
 
 #[tauri::command]
 pub async fn save_settings(settings: Settings) -> Result<(), String> {
-    let mut stored_settings = SETTINGS.lock().map_err(|e| e.to_string())?;
-    *stored_settings = settings;
+    save_settings_to_file(&settings)?;
     Ok(())
 }

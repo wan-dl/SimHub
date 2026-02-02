@@ -4,9 +4,9 @@
     "version": "Version"
   },
   "tabs": {
-    "ios": "iOS Emulators",
-    "android": "Android Emulators",
-    "harmony": "HarmonyOS Emulators"
+    "ios": "iOS",
+    "android": "Android",
+    "harmony": "Harmony"
   },
   "actions": {
     "refresh": "Refresh",
@@ -30,12 +30,12 @@
     "general": "General",
     "androidSettings": "Android Settings",
     "iosSettings": "iOS Settings",
-    "harmonySettings": "HarmonyOS Settings",
+    "harmonySettings": "Harmony Settings",
     "about": "About",
     "paths": "Paths",
     "android": "Android",
     "ios": "iOS",
-    "harmony": "HarmonyOS",
+    "harmony": "Harmony",
     "language": "Language",
     "theme": "Theme",
     "autoStart": "Auto Start",

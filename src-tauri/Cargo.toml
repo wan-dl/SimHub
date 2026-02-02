@@ -1,5 +1,5 @@
 [package]
-name = "oh-emulator-manager"
+name = "SimHub"
 version = "0.1.0"
 description = "跨平台模拟器管理工具"
 authors = ["OH Team"]
@@ -19,6 +19,7 @@ tokio = { version = "1", features = ["full"] }
 anyhow = "1"
 notify = "6"
 chrono = "0.4"
+dirs = "5"
 lazy_static = "1.4"
 
 [target.'cfg(not(any(target_os = "android", target_os = "ios")))'.dependencies]
