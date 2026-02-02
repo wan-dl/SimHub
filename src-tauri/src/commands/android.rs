@@ -17,9 +17,15 @@ pub async fn list_android_emulators() -> Result<Vec<AndroidEmulator>, String> {
     let android_home = crate::commands::settings::get_android_home()
         .ok_or_else(|| "Android SDK path not configured. Please set it in Settings.".to_string())?;
     
+    let emulator_exe = if cfg!(target_os = "windows") {
+        "emulator.exe"
+    } else {
+        "emulator"
+    };
+    
     let emulator_path = std::path::Path::new(&android_home)
         .join("emulator")
-        .join("emulator");
+        .join(emulator_exe);
     
     let output = Command::new(&emulator_path)
         .arg("-list-avds")
@@ -48,39 +54,39 @@ pub async fn list_android_emulators() -> Result<Vec<AndroidEmulator>, String> {
         }
     }
 
-    // Check running emulators by process and get device IDs
-    if let Ok(ps_output) = Command::new("ps").args(&["aux"]).output() {
-        let processes = String::from_utf8_lossy(&ps_output.stdout);
-        
-        // Also get adb devices to map AVD names to device IDs
-        let adb_path = std::path::Path::new(&android_home)
-            .join("platform-tools")
-            .join("adb");
-        
-        for emu in &mut emulators {
-            if processes.contains("qemu-system") && 
-               (processes.contains(&format!("-avd {}", emu.id)) || processes.contains(&format!("@{}", emu.id))) {
-                emu.status = "running".to_string();
-                
-                // Try to get the device ID (emulator-XXXX)
-                if let Ok(adb_output) = Command::new(&adb_path).arg("devices").output() {
-                    let devices = String::from_utf8_lossy(&adb_output.stdout);
-                    
-                    for line in devices.lines() {
-                        if line.contains("emulator-") && line.contains("device") {
-                            let parts: Vec<&str> = line.split_whitespace().collect();
-                            if let Some(serial) = parts.first() {
-                                // Query the AVD name for this emulator
-                                if let Ok(avd_output) = Command::new(&adb_path)
-                                    .args(["-s", serial, "emu", "avd", "name"])
-                                    .output() 
-                                {
-                                    let output_str = String::from_utf8_lossy(&avd_output.stdout);
-                                    if let Some(avd_name) = output_str.lines().next() {
-                                        let avd_name = avd_name.trim();
-                                        if emu.name == avd_name {
-                                            emu.id = serial.to_string(); // Use device ID as ID
-                                        }
+    // Check running emulators using adb devices
+    let adb_exe = if cfg!(target_os = "windows") {
+        "adb.exe"
+    } else {
+        "adb"
+    };
+    
+    let adb_path = std::path::Path::new(&android_home)
+        .join("platform-tools")
+        .join(adb_exe);
+    
+    if adb_path.exists() {
+        if let Ok(adb_output) = Command::new(&adb_path).arg("devices").output() {
+            let devices = String::from_utf8_lossy(&adb_output.stdout);
+            
+            for line in devices.lines() {
+                if line.contains("emulator-") && line.contains("device") {
+                    let parts: Vec<&str> = line.split_whitespace().collect();
+                    if let Some(serial) = parts.first() {
+                        // Query the AVD name for this emulator
+                        if let Ok(avd_output) = Command::new(&adb_path)
+                            .args(["-s", serial, "emu", "avd", "name"])
+                            .output() 
+                        {
+                            let output_str = String::from_utf8_lossy(&avd_output.stdout);
+                            if let Some(avd_name) = output_str.lines().next() {
+                                let avd_name = avd_name.trim();
+                                // Find matching emulator and update status
+                                for emu in &mut emulators {
+                                    if emu.name == avd_name {
+                                        emu.status = "running".to_string();
+                                        emu.id = serial.to_string(); // Use device serial as ID
+                                        break;
                                     }
                                 }
                             }
@@ -100,9 +106,15 @@ pub async fn start_android_emulator(id: String) -> Result<(), String> {
     let android_home = crate::commands::settings::get_android_home()
         .ok_or_else(|| "Android SDK path not configured. Please set it in Settings.".to_string())?;
     
+    let emulator_exe = if cfg!(target_os = "windows") {
+        "emulator.exe"
+    } else {
+        "emulator"
+    };
+    
     let emulator_path = std::path::Path::new(&android_home)
         .join("emulator")
-        .join("emulator");
+        .join(emulator_exe);
     
     if !emulator_path.exists() {
         return Err(format!("Emulator not found at: {:?}. Please check your Android SDK path in Settings.", emulator_path));
@@ -157,8 +169,22 @@ pub async fn start_android_emulator(id: String) -> Result<(), String> {
 
 #[tauri::command]
 pub async fn stop_android_emulator(id: String) -> Result<(), String> {
+    // Get ANDROID_HOME from settings or environment
+    let android_home = crate::commands::settings::get_android_home()
+        .ok_or_else(|| "Android SDK path not configured. Please set it in Settings.".to_string())?;
+    
+    let adb_exe = if cfg!(target_os = "windows") {
+        "adb.exe"
+    } else {
+        "adb"
+    };
+    
+    let adb_path = std::path::Path::new(&android_home)
+        .join("platform-tools")
+        .join(adb_exe);
+    
     // 首先获取当前设备列表
-    let devices_output = Command::new("adb")
+    let devices_output = Command::new(&adb_path)
         .args(&["devices"])
         .output()
         .map_err(|e| format!("Failed to get devices: {}", e))?;
@@ -180,7 +206,7 @@ pub async fn stop_android_emulator(id: String) -> Result<(), String> {
     let serial = target_serial.ok_or_else(|| format!("Emulator '{}' not found in running devices", id))?;
     
     // 发送关闭命令
-    let kill_output = Command::new("adb")
+    let kill_output = Command::new(&adb_path)
         .args(&["-s", &serial, "emu", "kill"])
         .output()
         .map_err(|e| format!("Failed to stop emulator {}: {}", serial, e))?;
@@ -190,27 +216,31 @@ pub async fn stop_android_emulator(id: String) -> Result<(), String> {
         return Err(format!("Failed to stop emulator {}: {}", serial, stderr));
     }
     
-    // 等待并验证进程是否关闭
-    for _ in 0..10 {
-        tokio::time::sleep(tokio::time::Duration::from_millis(500)).await;
-        
-        let ps_output = Command::new("ps")
-            .args(&["aux"])
-            .output()
-            .map_err(|e| format!("Failed to check processes: {}", e))?;
-        
-        let processes = String::from_utf8_lossy(&ps_output.stdout);
-        if !processes.contains("qemu-system") || !processes.contains(&id) {
-            return Ok(());
-        }
-    }
+    // Wait a moment for the emulator to shut down
+    tokio::time::sleep(tokio::time::Duration::from_millis(1000)).await;
     
-    Err(format!("Emulator {} process still running after 5 seconds", id))
+    Ok(())
 }
 
 #[tauri::command]
 pub async fn delete_android_emulator(id: String) -> Result<(), String> {
-    Command::new("avdmanager")
+    // Get ANDROID_HOME from settings or environment
+    let android_home = crate::commands::settings::get_android_home()
+        .ok_or_else(|| "Android SDK path not configured. Please set it in Settings.".to_string())?;
+    
+    let avdmanager_exe = if cfg!(target_os = "windows") {
+        "avdmanager.bat"
+    } else {
+        "avdmanager"
+    };
+    
+    let avdmanager_path = std::path::Path::new(&android_home)
+        .join("cmdline-tools")
+        .join("latest")
+        .join("bin")
+        .join(avdmanager_exe);
+    
+    Command::new(&avdmanager_path)
         .args(&["delete", "avd", "-n", &id])
         .output()
         .map_err(|e| format!("Failed to delete emulator: {}", e))?;
@@ -220,7 +250,21 @@ pub async fn delete_android_emulator(id: String) -> Result<(), String> {
 
 #[tauri::command]
 pub async fn wipe_android_data(id: String) -> Result<(), String> {
-    Command::new("emulator")
+    // Get ANDROID_HOME from settings or environment
+    let android_home = crate::commands::settings::get_android_home()
+        .ok_or_else(|| "Android SDK path not configured. Please set it in Settings.".to_string())?;
+    
+    let emulator_exe = if cfg!(target_os = "windows") {
+        "emulator.exe"
+    } else {
+        "emulator"
+    };
+    
+    let emulator_path = std::path::Path::new(&android_home)
+        .join("emulator")
+        .join(emulator_exe);
+    
+    Command::new(&emulator_path)
         .args(&["-avd", &id, "-wipe-data"])
         .spawn()
         .map_err(|e| format!("Failed to wipe data: {}", e))?;
@@ -230,7 +274,21 @@ pub async fn wipe_android_data(id: String) -> Result<(), String> {
 
 #[tauri::command]
 pub async fn screenshot_android(id: String) -> Result<String, String> {
-    let output = Command::new("adb")
+    // Get ANDROID_HOME from settings or environment
+    let android_home = crate::commands::settings::get_android_home()
+        .ok_or_else(|| "Android SDK path not configured. Please set it in Settings.".to_string())?;
+    
+    let adb_exe = if cfg!(target_os = "windows") {
+        "adb.exe"
+    } else {
+        "adb"
+    };
+    
+    let adb_path = std::path::Path::new(&android_home)
+        .join("platform-tools")
+        .join(adb_exe);
+    
+    let output = Command::new(&adb_path)
         .args(&["devices"])
         .output()
         .map_err(|e| format!("Failed to get devices: {}", e))?;
@@ -244,7 +302,7 @@ pub async fn screenshot_android(id: String) -> Result<String, String> {
                 let timestamp = chrono::Local::now().format("%Y%m%d_%H%M%S");
                 let filename = format!("screenshot_{}_{}.png", id, timestamp);
                 
-                Command::new("adb")
+                Command::new(&adb_path)
                     .args(&["-s", serial, "exec-out", "screencap", "-p"])
                     .output()
                     .map_err(|e| format!("Failed to take screenshot: {}", e))?;
