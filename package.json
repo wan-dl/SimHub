@@ -1,5 +1,5 @@
 {
-  "name": "oh-emulator-manager",
+  "name": "SimHub",
   "version": "0.1.0",
   "description": "跨平台模拟器管理工具",
   "type": "module",

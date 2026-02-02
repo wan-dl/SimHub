@@ -1,7 +1,11 @@
 {
   "permissions": {
     "allow": [
-      "Bash(tree:*)"
+      "Bash(tree:*)",
+      "Bash(where:*)",
+      "Bash(rustup default:*)",
+      "Bash(cargo clean:*)",
+      "Bash(pnpm tauri dev:*)"
     ]
   }
 }
