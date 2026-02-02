@@ -28,7 +28,14 @@
   "settings": {
     "title": "Settings",
     "general": "General",
+    "androidSettings": "Android Settings",
+    "iosSettings": "iOS Settings",
+    "harmonySettings": "HarmonyOS Settings",
+    "about": "About",
     "paths": "Paths",
+    "android": "Android",
+    "ios": "iOS",
+    "harmony": "HarmonyOS",
     "language": "Language",
     "theme": "Theme",
     "autoStart": "Auto Start",
@@ -36,6 +43,7 @@
     "closeToMinimize": "Close to Minimize",
     "androidHome": "Android SDK Path",
     "devecoHome": "DevEco Studio Path",
+    "xcodeHome": "Xcode Path",
     "selectFolder": "Select Folder",
     "save": "Save",
     "cancel": "Cancel"

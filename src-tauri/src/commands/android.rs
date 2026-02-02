@@ -1,5 +1,6 @@
 use serde::{Deserialize, Serialize};
 use std::process::Command;
+use tokio;
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct AndroidEmulator {
@@ -12,8 +13,18 @@ pub struct AndroidEmulator {
 
 #[tauri::command]
 pub async fn list_android_emulators() -> Result<Vec<AndroidEmulator>, String> {
-    let output = Command::new("emulator")
+    // Get ANDROID_HOME from settings or environment
+    let android_home = crate::commands::settings::get_android_home()
+        .ok_or_else(|| "Android SDK path not configured. Please set it in Settings.".to_string())?;
+    
+    let emulator_path = std::path::Path::new(&android_home)
+        .join("emulator")
+        .join("emulator");
+    
+    let output = Command::new(&emulator_path)
         .arg("-list-avds")
+        .env("ANDROID_HOME", &android_home)
+        .env("ANDROID_SDK_ROOT", &android_home)
         .output()
         .map_err(|e| format!("Failed to execute emulator command: {}", e))?;
 
@@ -30,19 +41,52 @@ pub async fn list_android_emulators() -> Result<Vec<AndroidEmulator>, String> {
             emulators.push(AndroidEmulator {
                 id: name.to_string(),
                 name: name.to_string(),
-                device_type: "Android Device".to_string(),
-                os_version: "Unknown".to_string(),
+                device_type: name.to_string(),
+                os_version: "".to_string(),
                 status: "stopped".to_string(),
             });
         }
     }
 
-    // Check running emulators
-    if let Ok(adb_output) = Command::new("adb").arg("devices").output() {
-        let devices = String::from_utf8_lossy(&adb_output.stdout);
+    // Check running emulators by process and get device IDs
+    if let Ok(ps_output) = Command::new("ps").args(&["aux"]).output() {
+        let processes = String::from_utf8_lossy(&ps_output.stdout);
+        
+        // Also get adb devices to map AVD names to device IDs
+        let adb_path = std::path::Path::new(&android_home)
+            .join("platform-tools")
+            .join("adb");
+        
         for emu in &mut emulators {
-            if devices.contains(&emu.id) {
+            if processes.contains("qemu-system") && 
+               (processes.contains(&format!("-avd {}", emu.id)) || processes.contains(&format!("@{}", emu.id))) {
                 emu.status = "running".to_string();
+                
+                // Try to get the device ID (emulator-XXXX)
+                if let Ok(adb_output) = Command::new(&adb_path).arg("devices").output() {
+                    let devices = String::from_utf8_lossy(&adb_output.stdout);
+                    
+                    for line in devices.lines() {
+                        if line.contains("emulator-") && line.contains("device") {
+                            let parts: Vec<&str> = line.split_whitespace().collect();
+                            if let Some(serial) = parts.first() {
+                                // Query the AVD name for this emulator
+                                if let Ok(avd_output) = Command::new(&adb_path)
+                                    .args(["-s", serial, "emu", "avd", "name"])
+                                    .output() 
+                                {
+                                    let output_str = String::from_utf8_lossy(&avd_output.stdout);
+                                    if let Some(avd_name) = output_str.lines().next() {
+                                        let avd_name = avd_name.trim();
+                                        if emu.name == avd_name {
+                                            emu.id = serial.to_string(); // Use device ID as ID
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
             }
         }
     }
@@ -52,38 +96,116 @@ pub async fn list_android_emulators() -> Result<Vec<AndroidEmulator>, String> {
 
 #[tauri::command]
 pub async fn start_android_emulator(id: String) -> Result<(), String> {
-    Command::new("emulator")
-        .arg("-avd")
+    // Get ANDROID_HOME from settings or environment
+    let android_home = crate::commands::settings::get_android_home()
+        .ok_or_else(|| "Android SDK path not configured. Please set it in Settings.".to_string())?;
+    
+    let emulator_path = std::path::Path::new(&android_home)
+        .join("emulator")
+        .join("emulator");
+    
+    if !emulator_path.exists() {
+        return Err(format!("Emulator not found at: {:?}. Please check your Android SDK path in Settings.", emulator_path));
+    }
+    
+    // Set up environment variables
+    let mut cmd = Command::new(&emulator_path);
+    cmd.arg("-avd")
         .arg(&id)
-        .spawn()
+        .env("ANDROID_HOME", &android_home)
+        .env("ANDROID_SDK_ROOT", &android_home)
+        .stdout(std::process::Stdio::piped())
+        .stderr(std::process::Stdio::piped());
+    
+    let mut child = cmd.spawn()
         .map_err(|e| format!("Failed to start emulator: {}", e))?;
+
+    // Wait a moment to capture any immediate errors
+    tokio::time::sleep(tokio::time::Duration::from_millis(500)).await;
+    
+    // Try to get the exit status (non-blocking check)
+    match child.try_wait() {
+        Ok(Some(status)) => {
+            // Process exited, capture error output
+            let output = child.wait_with_output()
+                .map_err(|e| format!("Failed to read output: {}", e))?;
+            
+            let stderr = String::from_utf8_lossy(&output.stderr);
+            let stdout = String::from_utf8_lossy(&output.stdout);
+            
+            if !status.success() {
+                let error_msg = if !stderr.is_empty() {
+                    stderr.to_string()
+                } else if !stdout.is_empty() {
+                    stdout.to_string()
+                } else {
+                    format!("Emulator exited with status: {}", status)
+                };
+                return Err(error_msg);
+            }
+        }
+        Ok(None) => {
+            // Process is still running, which is good
+        }
+        Err(e) => {
+            return Err(format!("Failed to check process status: {}", e));
+        }
+    }
 
     Ok(())
 }
 
 #[tauri::command]
 pub async fn stop_android_emulator(id: String) -> Result<(), String> {
-    let output = Command::new("adb")
+    // 首先获取当前设备列表
+    let devices_output = Command::new("adb")
         .args(&["devices"])
         .output()
         .map_err(|e| format!("Failed to get devices: {}", e))?;
 
-    let devices = String::from_utf8_lossy(&output.stdout);
+    let devices = String::from_utf8_lossy(&devices_output.stdout);
+    let mut target_serial = None;
     
+    // 查找目标模拟器
     for line in devices.lines() {
-        if line.contains(&id) {
+        if line.contains(&id) || line.contains(&format!("emulator-{}", id)) {
             let parts: Vec<&str> = line.split_whitespace().collect();
             if let Some(serial) = parts.first() {
-                Command::new("adb")
-                    .args(&["-s", serial, "emu", "kill"])
-                    .output()
-                    .map_err(|e| format!("Failed to stop emulator: {}", e))?;
-                return Ok(());
+                target_serial = Some(serial.to_string());
+                break;
             }
         }
     }
-
-    Err("Emulator not found".to_string())
+    
+    let serial = target_serial.ok_or_else(|| format!("Emulator '{}' not found in running devices", id))?;
+    
+    // 发送关闭命令
+    let kill_output = Command::new("adb")
+        .args(&["-s", &serial, "emu", "kill"])
+        .output()
+        .map_err(|e| format!("Failed to stop emulator {}: {}", serial, e))?;
+    
+    if !kill_output.status.success() {
+        let stderr = String::from_utf8_lossy(&kill_output.stderr);
+        return Err(format!("Failed to stop emulator {}: {}", serial, stderr));
+    }
+    
+    // 等待并验证进程是否关闭
+    for _ in 0..10 {
+        tokio::time::sleep(tokio::time::Duration::from_millis(500)).await;
+        
+        let ps_output = Command::new("ps")
+            .args(&["aux"])
+            .output()
+            .map_err(|e| format!("Failed to check processes: {}", e))?;
+        
+        let processes = String::from_utf8_lossy(&ps_output.stdout);
+        if !processes.contains("qemu-system") || !processes.contains(&id) {
+            return Ok(());
+        }
+    }
+    
+    Err(format!("Emulator {} process still running after 5 seconds", id))
 }
 
 #[tauri::command]

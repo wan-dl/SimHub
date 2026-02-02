@@ -4,9 +4,9 @@
     "version": "版本"
   },
   "tabs": {
-    "ios": "iOS 模拟器",
-    "android": "Android 模拟器",
-    "harmony": "HarmonyOS 模拟器"
+    "ios": "iOS",
+    "android": "Android",
+    "harmony": "Harmony"
   },
   "actions": {
     "refresh": "刷新",
@@ -27,8 +27,15 @@
   },
   "settings": {
     "title": "设置",
-    "general": "通用设置",
+    "general": "通用",
+    "androidSettings": "Android 设置",
+    "iosSettings": "iOS 设置", 
+    "harmonySettings": "鸿蒙设置",
+    "about": "关于",
     "paths": "路径配置",
+    "android": "Android",
+    "ios": "iOS",
+    "harmony": "鸿蒙",
     "language": "界面语言",
     "theme": "主题模式",
     "autoStart": "开机自启",
@@ -36,6 +43,7 @@
     "closeToMinimize": "关闭时最小化",
     "androidHome": "Android SDK 路径",
     "devecoHome": "DevEco Studio 路径",
+    "xcodeHome": "Xcode 路径",
     "selectFolder": "选择文件夹",
     "save": "保存",
     "cancel": "取消"

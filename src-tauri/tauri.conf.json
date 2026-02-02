@@ -29,16 +29,28 @@
     "windows": [
       {
         "title": "OH Emulator Manager",
-        "width": 1200,
-        "height": 800,
-        "minWidth": 800,
-        "minHeight": 600,
+        "width": 720,
+        "height": 450,
+        "minWidth": 600,
+        "minHeight": 360,
         "resizable": true,
         "fullscreen": false
       }
     ],
     "security": {
-      "csp": null
+      "csp": null,
+      "capabilities": [
+        {
+          "identifier": "main-capability",
+          "windows": ["main"],
+          "permissions": [
+            "core:default",
+            "shell:allow-open",
+            "dialog:allow-open",
+            "dialog:allow-save"
+          ]
+        }
+      ]
     }
   },
   "plugins": {

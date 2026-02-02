@@ -10,6 +10,7 @@ export const useSettingsStore = defineStore('settings', () => {
   const closeToMinimize = ref(true)
   const androidHome = ref('')
   const devecoHome = ref('')
+  const xcodeHome = ref('')
 
   async function loadSettings() {
     try {
@@ -21,6 +22,7 @@ export const useSettingsStore = defineStore('settings', () => {
       closeToMinimize.value = settings.close_to_minimize
       androidHome.value = settings.android_home
       devecoHome.value = settings.deveco_home
+      xcodeHome.value = settings.xcode_home
     } catch (error) {
       console.error('Failed to load settings:', error)
     }
@@ -35,7 +37,8 @@ export const useSettingsStore = defineStore('settings', () => {
         minimize_to_tray: minimizeToTray.value,
         close_to_minimize: closeToMinimize.value,
         android_home: androidHome.value,
-        deveco_home: devecoHome.value
+        deveco_home: devecoHome.value,
+        xcode_home: xcodeHome.value
       }
     })
   }
@@ -48,6 +51,7 @@ export const useSettingsStore = defineStore('settings', () => {
     closeToMinimize,
     androidHome,
     devecoHome,
+    xcodeHome,
     loadSettings,
     saveSettings
   }

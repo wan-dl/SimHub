@@ -9,69 +9,106 @@
       <h1>{{ t('settings.title') }}</h1>
     </div>
 
-    <div class="settings-content">
-      <n-card :title="t('settings.general')">
-        <n-form label-placement="left" label-width="120">
-          <n-form-item :label="t('settings.language')">
-            <n-select
-              v-model:value="settingsStore.language"
-              :options="languageOptions"
-            />
-          </n-form-item>
-          <n-form-item :label="t('settings.theme')">
-            <n-select
-              v-model:value="settingsStore.theme"
-              :options="themeOptions"
-            />
-          </n-form-item>
-          <n-form-item :label="t('settings.autoStart')">
-            <n-switch v-model:value="settingsStore.autoStart" />
-          </n-form-item>
-          <n-form-item :label="t('settings.minimizeToTray')">
-            <n-switch v-model:value="settingsStore.minimizeToTray" />
-          </n-form-item>
-          <n-form-item :label="t('settings.closeToMinimize')">
-            <n-switch v-model:value="settingsStore.closeToMinimize" />
-          </n-form-item>
-        </n-form>
-      </n-card>
+    <div class="settings-container">
+      <div class="tabs-header">
+        <div 
+          v-for="tab in tabs" 
+          :key="tab.key"
+          :class="['tab-item', { active: activeTab === tab.key }]"
+          @click="activeTab = tab.key"
+        >
+          {{ tab.label }}
+        </div>
+      </div>
 
-      <n-card :title="t('settings.paths')" style="margin-top: 16px">
-        <n-form label-placement="left" label-width="120">
-          <n-form-item :label="t('settings.androidHome')">
-            <n-input-group>
-              <n-input v-model:value="settingsStore.androidHome" readonly />
-              <n-button @click="selectAndroidHome">
-                {{ t('settings.selectFolder') }}
-              </n-button>
-            </n-input-group>
-          </n-form-item>
-          <n-form-item :label="t('settings.devecoHome')">
-            <n-input-group>
-              <n-input v-model:value="settingsStore.devecoHome" readonly />
-              <n-button @click="selectDevecoHome">
-                {{ t('settings.selectFolder') }}
-              </n-button>
-            </n-input-group>
-          </n-form-item>
-        </n-form>
-      </n-card>
+      <div class="content">
+        <!-- 通用设置 -->
+        <div v-if="activeTab === 'general'" class="tab-content">
+          <n-form label-placement="left" label-width="120">
+            <n-form-item :label="t('settings.language')">
+              <n-select
+                v-model:value="settingsStore.language"
+                :options="languageOptions"
+                @update:value="handleAutoSave"
+              />
+            </n-form-item>
+            <n-form-item :label="t('settings.theme')">
+              <n-select
+                v-model:value="settingsStore.theme"
+                :options="themeOptions"
+                @update:value="handleAutoSave"
+              />
+            </n-form-item>
+            <n-form-item :label="t('settings.autoStart')">
+              <n-switch v-model:value="settingsStore.autoStart" @update:value="handleAutoSave" />
+            </n-form-item>
+            <n-form-item :label="t('settings.minimizeToTray')">
+              <n-switch v-model:value="settingsStore.minimizeToTray" @update:value="handleAutoSave" />
+            </n-form-item>
+            <n-form-item :label="t('settings.closeToMinimize')">
+              <n-switch v-model:value="settingsStore.closeToMinimize" @update:value="handleAutoSave" />
+            </n-form-item>
+          </n-form>
+        </div>
 
-      <div class="actions">
-        <n-button type="primary" @click="handleSave">
-          {{ t('settings.save') }}
-        </n-button>
-        <n-button @click="router.back()">
-          {{ t('settings.cancel') }}
-        </n-button>
+        <!-- Android 设置 -->
+        <div v-if="activeTab === 'android'" class="tab-content">
+          <n-form label-placement="left" label-width="120">
+            <n-form-item :label="t('settings.androidHome')">
+              <n-input-group>
+                <n-input v-model:value="settingsStore.androidHome" readonly />
+                <n-button @click="selectAndroidHome">
+                  {{ t('settings.selectFolder') }}
+                </n-button>
+              </n-input-group>
+            </n-form-item>
+          </n-form>
+        </div>
+
+        <!-- iOS 设置 -->
+        <div v-if="activeTab === 'ios'" class="tab-content">
+          <n-form label-placement="left" label-width="120">
+            <n-form-item :label="t('settings.xcodeHome')">
+              <n-input-group>
+                <n-input v-model:value="settingsStore.xcodeHome" readonly />
+                <n-button @click="selectXcodeHome">
+                  {{ t('settings.selectFolder') }}
+                </n-button>
+              </n-input-group>
+            </n-form-item>
+          </n-form>
+        </div>
+
+        <!-- 鸿蒙设置 -->
+        <div v-if="activeTab === 'harmony'" class="tab-content">
+          <n-form label-placement="left" label-width="120">
+            <n-form-item :label="t('settings.devecoHome')">
+              <n-input-group>
+                <n-input v-model:value="settingsStore.devecoHome" readonly />
+                <n-button @click="selectDevecoHome">
+                  {{ t('settings.selectFolder') }}
+                </n-button>
+              </n-input-group>
+            </n-form-item>
+          </n-form>
+        </div>
+
+        <!-- 关于 -->
+        <div v-if="activeTab === 'about'" class="tab-content">
+          <div class="about-content">
+            <h3>{{ t('app.title') }}</h3>
+            <p>{{ t('app.version') }}: 1.0.0</p>
+            <p>跨平台模拟器管理工具</p>
+          </div>
+        </div>
       </div>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
-import { NCard, NForm, NFormItem, NSelect, NSwitch, NInput, NInputGroup, NButton, NIcon, useMessage } from 'naive-ui'
+import { computed, ref } from 'vue'
+import { NForm, NFormItem, NSelect, NSwitch, NInput, NInputGroup, NButton, NIcon, useMessage } from 'naive-ui'
 import { ArrowBack } from '@vicons/ionicons5'
 import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
@@ -82,6 +119,16 @@ const { t } = useI18n()
 const router = useRouter()
 const message = useMessage()
 const settingsStore = useSettingsStore()
+
+const activeTab = ref('general')
+
+const tabs = computed(() => [
+  { key: 'general', label: t('settings.general') },
+  { key: 'android', label: 'Android' },
+  { key: 'ios', label: 'iOS' },
+  { key: 'harmony', label: t('settings.harmony') },
+  { key: 'about', label: t('settings.about') }
+])
 
 const languageOptions = [
   { label: '中文', value: 'zh-CN' },
@@ -94,33 +141,66 @@ const themeOptions = computed(() => [
   { label: t('theme.system'), value: 'system' }
 ])
 
+const selectXcodeHome = async () => {
+  console.log('selectXcodeHome called')
+  try {
+    const selected = await open({
+      directory: true,
+      multiple: false,
+      title: 'Select Xcode Path'
+    })
+    console.log('Selected path:', selected)
+    if (selected) {
+      settingsStore.xcodeHome = selected as string
+      await handleAutoSave()
+    }
+  } catch (error) {
+    console.error('Error selecting folder:', error)
+    message.error('选择文件夹失败: ' + error)
+  }
+}
+
 const selectAndroidHome = async () => {
-  const selected = await open({
-    directory: true,
-    multiple: false,
-    title: 'Select Android SDK Path'
-  })
-  if (selected) {
-    settingsStore.androidHome = selected as string
+  console.log('selectAndroidHome called')
+  try {
+    const selected = await open({
+      directory: true,
+      multiple: false,
+      title: 'Select Android SDK Path'
+    })
+    console.log('Selected path:', selected)
+    if (selected) {
+      settingsStore.androidHome = selected as string
+      await handleAutoSave()
+    }
+  } catch (error) {
+    console.error('Error selecting folder:', error)
+    message.error('选择文件夹失败: ' + error)
   }
 }
 
 const selectDevecoHome = async () => {
-  const selected = await open({
-    directory: true,
-    multiple: false,
-    title: 'Select DevEco Studio Path'
-  })
-  if (selected) {
-    settingsStore.devecoHome = selected as string
+  console.log('selectDevecoHome called')
+  try {
+    const selected = await open({
+      directory: true,
+      multiple: false,
+      title: 'Select DevEco Studio Path'
+    })
+    console.log('Selected path:', selected)
+    if (selected) {
+      settingsStore.devecoHome = selected as string
+      await handleAutoSave()
+    }
+  } catch (error) {
+    console.error('Error selecting folder:', error)
+    message.error('选择文件夹失败: ' + error)
   }
 }
 
-const handleSave = async () => {
+const handleAutoSave = async () => {
   try {
     await settingsStore.saveSettings()
-    message.success(t('messages.settingsSaved'))
-    router.back()
   } catch (error) {
     message.error(t('messages.error'))
   }
@@ -147,14 +227,71 @@ const handleSave = async () => {
   font-weight: 600;
 }
 
-.settings-content {
+.settings-container {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  overflow: hidden;
+}
+
+.tabs-header {
+  display: flex;
+  gap: 8px;
+  padding: 16px 24px;
+  background: #f8f9fa;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+.tab-item {
+  padding: 8px 24px;
+  cursor: pointer;
+  border-radius: 20px;
+  transition: all 0.2s;
+  color: #666;
+  background: transparent;
+  font-size: 14px;
+}
+
+.tab-item:hover {
+  background: #e9ecef;
+}
+
+.tab-item.active {
+  background: #007bff;
+  color: white;
+  font-weight: 500;
+}
+
+.content {
+  flex: 1;
   padding: 24px;
   overflow-y: auto;
+}
+
+.tab-content {
+  max-width: 600px;
+}
+
+.about-content {
+  text-align: center;
+  padding: 40px 0;
+}
+
+.about-content h3 {
+  font-size: 24px;
+  margin-bottom: 16px;
+}
+
+.about-content p {
+  margin: 8px 0;
+  color: #666;
 }
 
 .actions {
   display: flex;
   gap: 12px;
-  margin-top: 24px;
+  margin-top: 32px;
+  padding-top: 24px;
+  border-top: 1px solid #e0e0e0;
 }
 </style>

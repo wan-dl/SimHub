@@ -1,7 +1,9 @@
 <template>
   <div class="emulator-list">
-    <n-spin :show="loading">
-      <n-empty v-if="emulators.length === 0" description="暂无模拟器" />
+    <n-spin :show="loading" class="spin-container">
+      <div v-if="emulators.length === 0" class="empty-container">
+        <n-empty description="暂无模拟器" />
+      </div>
       <emulator-card
         v-for="emulator in filteredEmulators"
         :key="emulator.id"
@@ -54,6 +56,17 @@ const filteredEmulators = computed(() => {
 .emulator-list {
   padding: 16px;
   overflow-y: auto;
-  height: calc(100vh - 160px);
+  height: 100%;
+}
+
+.spin-container {
+  height: 100%;
+}
+
+.empty-container {
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 </style>
