@@ -148,7 +148,10 @@ const filteredEmulators = computed(() => {
 const addConsoleLog = (type: string, message: string) => {
   const time = new Date().toLocaleTimeString()
   consoleLogs.value.push({ type, message, time })
-  consoleCollapsed.value = false
+  // 只在错误时自动展开控制台
+  if (type === 'error') {
+    consoleCollapsed.value = false
+  }
   nextTick(() => {
     if (consoleRef.value) {
       consoleRef.value.scrollTop = consoleRef.value.scrollHeight
