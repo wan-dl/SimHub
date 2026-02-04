@@ -306,6 +306,31 @@
   -ms-user-select: text;
 }
 
+/* 自定义滚动条样式 - 浅色 */
+.console-content::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+.console-content::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.console-content::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.15);
+  border-radius: 4px;
+}
+
+.console-content::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 0, 0, 0.25);
+}
+
+/* Firefox 滚动条样式 */
+.console-content {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(0, 0, 0, 0.15) transparent;
+}
+
 .console-content * {
   user-select: text;
   -webkit-user-select: text;
