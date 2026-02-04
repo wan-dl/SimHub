@@ -4,6 +4,8 @@ use std::sync::Mutex;
 use tokio;
 use arboard::{Clipboard, ImageData};
 use image::GenericImageView;
+use std::process::Stdio;
+use tokio::io::{AsyncBufReadExt, BufReader as TokioBufReader};
 
 static LOGCAT_BUFFER: Mutex<Vec<String>> = Mutex::new(Vec::new());
 static LOGCAT_RUNNING: Mutex<bool> = Mutex::new(false);
@@ -704,7 +706,10 @@ pub async fn screenshot_android(id: String) -> Result<String, String> {
 }
 
 #[tauri::command]
-pub async fn start_logcat(device_id: String) -> Result<(), String> {
+pub async fn start_logcat(device_id: String, time_filter: Option<String>) -> Result<(), String> {
+    // 先停止之前的 logcat
+    stop_logcat().await?;
+    
     let android_home = crate::commands::settings::get_android_home()
         .ok_or_else(|| "Android SDK path not configured".to_string())?;
     
@@ -718,37 +723,87 @@ pub async fn start_logcat(device_id: String) -> Result<(), String> {
         .join("platform-tools")
         .join(adb_exe);
     
-    // 标记 logcat 正在运行
-    {
-        let mut running = LOGCAT_RUNNING.lock().unwrap();
-        *running = true;
-    }
-    
     // 清空缓冲区
     {
         let mut buffer = LOGCAT_BUFFER.lock().unwrap();
         buffer.clear();
     }
     
-    // 在后台线程中运行 logcat
-    let adb_path_clone = adb_path.clone();
-    let device_id_clone = device_id.clone();
+    // 构建 logcat 命令参数
+    let mut args = vec!["-s".to_string(), device_id.clone(), "logcat".to_string(), "-v".to_string(), "color".to_string()];
     
+    // 添加时间过滤参数
+    // time_filter 格式：
+    // - "recent:5" 表示最近5分钟
+    // - "since:2024-02-04T10:30:00Z" 表示从某个时间点开始
+    if let Some(filter) = time_filter {
+        if filter.starts_with("recent:") {
+            // 最近 N 分钟
+            if let Ok(minutes) = filter.strip_prefix("recent:").unwrap_or("").parse::<i64>() {
+                // 计算时间点
+                let now = chrono::Local::now();
+                let since = now - chrono::Duration::minutes(minutes);
+                let time_str = since.format("%m-%d %H:%M:%S.000").to_string();
+                args.push("-t".to_string());
+                args.push(time_str);
+            }
+        } else if filter.starts_with("since:") {
+            // 从某个时间点开始
+            if let Some(time_str) = filter.strip_prefix("since:") {
+                // 解析时间字符串
+                if let Ok(dt) = chrono::DateTime::parse_from_rfc3339(time_str) {
+                    let local_dt = dt.with_timezone(&chrono::Local);
+                    let time_str = local_dt.format("%m-%d %H:%M:%S.000").to_string();
+                    args.push("-t".to_string());
+                    args.push(time_str);
+                }
+            }
+        }
+    }
+    
+    // 转换为字符串引用
+    let args_refs: Vec<&str> = args.iter().map(|s| s.as_str()).collect();
+    
+    // 启动 logcat 进程
+    let mut child = tokio::process::Command::new(&adb_path)
+        .args(&args_refs)
+        .stdout(Stdio::piped())
+        .stderr(Stdio::piped())
+        .spawn()
+        .map_err(|e| format!("Failed to start logcat: {}", e))?;
+    
+    // 获取 stdout
+    let stdout = child.stdout.take()
+        .ok_or_else(|| "Failed to capture stdout".to_string())?;
+    
+    // 标记 logcat 正在运行
+    {
+        let mut running = LOGCAT_RUNNING.lock().unwrap();
+        *running = true;
+    }
+    
+    // 在后台线程中持续读取日志
     tokio::spawn(async move {
-        let output = Command::new(&adb_path_clone)
-            .args(&["-s", &device_id_clone, "logcat", "-v", "brief"])
-            .output();
+        let reader = TokioBufReader::new(stdout);
+        let mut lines = reader.lines();
         
-        if let Ok(output) = output {
-            let logs = String::from_utf8_lossy(&output.stdout);
+        while let Ok(Some(line)) = lines.next_line().await {
+            // 检查是否应该停止
+            {
+                let running = LOGCAT_RUNNING.lock().unwrap();
+                if !*running {
+                    break;
+                }
+            }
+            
             let mut buffer = LOGCAT_BUFFER.lock().unwrap();
             
-            for line in logs.lines() {
-                if buffer.len() >= 1000 {
-                    buffer.remove(0);
-                }
-                buffer.push(line.to_string());
+            // 限制缓冲区大小
+            if buffer.len() >= 1000 {
+                buffer.remove(0);
             }
+            
+            buffer.push(line);
         }
     });
     
@@ -765,11 +820,20 @@ pub async fn get_logcat_logs(_device_id: String) -> Result<Vec<String>, String> 
 
 #[tauri::command]
 pub async fn stop_logcat() -> Result<(), String> {
-    let mut running = LOGCAT_RUNNING.lock().unwrap();
-    *running = false;
+    // 标记停止
+    {
+        let mut running = LOGCAT_RUNNING.lock().unwrap();
+        *running = false;
+    }
     
-    let mut buffer = LOGCAT_BUFFER.lock().unwrap();
-    buffer.clear();
+    // 清空缓冲区
+    {
+        let mut buffer = LOGCAT_BUFFER.lock().unwrap();
+        buffer.clear();
+    }
+    
+    // 注意：由于我们使用 tokio::process::Command，进程会在任务结束时自动清理
+    // 我们通过设置 LOGCAT_RUNNING = false 来让读取循环退出
     
     Ok(())
 }
@@ -800,4 +864,86 @@ pub async fn copy_image_to_clipboard(path: String) -> Result<(), String> {
         .map_err(|e| format!("Failed to copy image to clipboard: {}", e))?;
     
     Ok(())
+}
+
+#[tauri::command]
+pub async fn write_log_file(path: String, content: String) -> Result<(), String> {
+    std::fs::write(&path, content)
+        .map_err(|e| format!("Failed to write log file: {}", e))?;
+    Ok(())
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct PackageInfo {
+    pub name: String,
+    pub is_system: bool,
+}
+
+#[tauri::command]
+pub async fn get_device_packages(device_id: String) -> Result<Vec<PackageInfo>, String> {
+    let android_home = crate::commands::settings::get_android_home()
+        .ok_or_else(|| "Android SDK path not configured".to_string())?;
+    
+    let adb_exe = if cfg!(target_os = "windows") {
+        "adb.exe"
+    } else {
+        "adb"
+    };
+    
+    let adb_path = std::path::Path::new(&android_home)
+        .join("platform-tools")
+        .join(adb_exe);
+    
+    // 获取所有包名
+    let output = Command::new(&adb_path)
+        .args(&["-s", &device_id, "shell", "pm", "list", "packages"])
+        .output()
+        .map_err(|e| format!("Failed to list packages: {}", e))?;
+    
+    if !output.status.success() {
+        let stderr = String::from_utf8_lossy(&output.stderr);
+        return Err(format!("Failed to get packages: {}", stderr));
+    }
+    
+    let packages_output = String::from_utf8_lossy(&output.stdout);
+    let mut packages = Vec::new();
+    
+    // 获取系统包列表
+    let system_output = Command::new(&adb_path)
+        .args(&["-s", &device_id, "shell", "pm", "list", "packages", "-s"])
+        .output()
+        .map_err(|e| format!("Failed to list system packages: {}", e))?;
+    
+    let system_packages_output = String::from_utf8_lossy(&system_output.stdout);
+    let system_packages: std::collections::HashSet<String> = system_packages_output
+        .lines()
+        .filter_map(|line| {
+            line.strip_prefix("package:")
+                .map(|s| s.trim().to_string())
+        })
+        .collect();
+    
+    // 解析所有包名
+    for line in packages_output.lines() {
+        if let Some(package_name) = line.strip_prefix("package:") {
+            let package_name = package_name.trim().to_string();
+            let is_system = system_packages.contains(&package_name);
+            
+            packages.push(PackageInfo {
+                name: package_name,
+                is_system,
+            });
+        }
+    }
+    
+    // 排序：第三方包在前，系统包在后
+    packages.sort_by(|a, b| {
+        match (a.is_system, b.is_system) {
+            (false, true) => std::cmp::Ordering::Less,
+            (true, false) => std::cmp::Ordering::Greater,
+            _ => a.name.cmp(&b.name),
+        }
+    });
+    
+    Ok(packages)
 }
