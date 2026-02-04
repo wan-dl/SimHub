@@ -17,6 +17,7 @@ pub struct Settings {
     pub harmony_hdc_path: String,
     pub xcode_home: String,
     pub screenshot_dir: String,
+    pub android_force_kill: bool,
 }
 
 impl Default for Settings {
@@ -39,6 +40,7 @@ impl Default for Settings {
             harmony_hdc_path: String::new(),
             xcode_home: String::new(),
             screenshot_dir,
+            android_force_kill: false,
         }
     }
 }
@@ -94,6 +96,13 @@ pub fn get_android_home() -> Option<String> {
     std::env::var("ANDROID_HOME")
         .or_else(|_| std::env::var("ANDROID_SDK_ROOT"))
         .ok()
+}
+
+pub fn get_android_force_kill() -> bool {
+    if let Ok(settings) = load_settings_from_file() {
+        return settings.android_force_kill;
+    }
+    false
 }
 
 pub fn get_screenshot_dir() -> Option<String> {

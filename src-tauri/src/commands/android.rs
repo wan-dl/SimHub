@@ -100,6 +100,45 @@ pub async fn list_android_emulators() -> Result<Vec<AndroidEmulator>, String> {
             }
         }
     }
+    
+    // 额外检查：通过进程名称判断模拟器是否在运行
+    // 这样即使 adb 还没连接上，只要进程存在就显示为运行状态
+    #[cfg(target_os = "windows")]
+    {
+        if let Ok(output) = Command::new("wmic")
+            .args(&["process", "get", "CommandLine", "/format:csv"])
+            .output() 
+        {
+            let output_str = String::from_utf8_lossy(&output.stdout);
+            for emu in &mut emulators {
+                if emu.status == "stopped" {
+                    // 检查是否有包含该模拟器名称的进程
+                    if output_str.contains(&format!("-avd {}", emu.name)) || 
+                       output_str.contains(&format!("-avd \"{}\"", emu.name)) {
+                        emu.status = "running".to_string();
+                    }
+                }
+            }
+        }
+    }
+    
+    #[cfg(any(target_os = "macos", target_os = "linux"))]
+    {
+        if let Ok(output) = Command::new("ps")
+            .args(&["aux"])
+            .output() 
+        {
+            let output_str = String::from_utf8_lossy(&output.stdout);
+            for emu in &mut emulators {
+                if emu.status == "stopped" {
+                    // 检查是否有包含该模拟器名称的进程
+                    if output_str.contains(&format!("-avd {}", emu.name)) {
+                        emu.status = "running".to_string();
+                    }
+                }
+            }
+        }
+    }
 
     Ok(emulators)
 }
@@ -198,6 +237,9 @@ pub async fn stop_android_emulator(id: String) -> Result<(), String> {
     let android_home = crate::commands::settings::get_android_home()
         .ok_or_else(|| "Android SDK path not configured. Please set it in Settings.".to_string())?;
     
+    // Check if force kill is enabled
+    let force_kill = crate::commands::settings::get_android_force_kill();
+    
     let adb_exe = if cfg!(target_os = "windows") {
         "adb.exe"
     } else {
@@ -230,15 +272,245 @@ pub async fn stop_android_emulator(id: String) -> Result<(), String> {
     
     let serial = target_serial.ok_or_else(|| format!("Emulator '{}' not found in running devices", id))?;
     
-    // 发送关闭命令
-    let kill_output = Command::new(&adb_path)
-        .args(&["-s", &serial, "emu", "kill"])
-        .output()
-        .map_err(|e| format!("Failed to stop emulator {}: {}", serial, e))?;
-    
-    if !kill_output.status.success() {
-        let stderr = String::from_utf8_lossy(&kill_output.stderr);
-        return Err(format!("Failed to stop emulator {}: {}", serial, stderr));
+    if force_kill {
+        println!("Force kill mode enabled for emulator: {}", id);
+        
+        // 先找到模拟器进程的PID
+        #[cfg(target_os = "windows")]
+        {
+            // Windows: 使用 wmic 查找进程
+            println!("Finding process with wmic...");
+            
+            let output = Command::new("wmic")
+                .args(&["process", "get", "ProcessId,CommandLine", "/format:csv"])
+                .output()
+                .map_err(|e| format!("Failed to find emulator process: {}", e))?;
+            
+            let output_str = String::from_utf8_lossy(&output.stdout);
+            println!("Process list output (filtered):");
+            
+            // 查找包含 qemu-system 或 emulator 且包含模拟器ID的进程
+            let mut pids = Vec::new();
+            for line in output_str.lines() {
+                if (line.contains("qemu-system") || line.contains("emulator.exe")) && 
+                   (line.contains(&id) || line.contains(&serial)) {
+                    println!("Found matching process: {}", line);
+                    
+                    // CSV 格式：Node,CommandLine,ProcessId
+                    // 提取最后一个字段作为PID
+                    let parts: Vec<&str> = line.split(',').collect();
+                    if let Some(pid_str) = parts.last() {
+                        let pid_str = pid_str.trim();
+                        if let Ok(pid) = pid_str.parse::<u32>() {
+                            pids.push(pid);
+                        }
+                    }
+                }
+            }
+            
+            if pids.is_empty() {
+                println!("Cannot find process for emulator: {}, trying alternative method", id);
+                
+                // 尝试查找所有模拟器进程
+                for line in output_str.lines() {
+                    if line.contains("qemu-system") || (line.contains("emulator") && line.contains("-avd")) {
+                        println!("Found emulator process: {}", line);
+                        
+                        let parts: Vec<&str> = line.split(',').collect();
+                        if let Some(pid_str) = parts.last() {
+                            let pid_str = pid_str.trim();
+                            if let Ok(pid) = pid_str.parse::<u32>() {
+                                pids.push(pid);
+                            }
+                        }
+                    }
+                }
+            }
+            
+            if pids.is_empty() {
+                return Err(format!("Cannot find process for emulator: {}", id));
+            }
+            
+            // 强杀找到的进程
+            for pid in pids {
+                let kill_cmd = format!("taskkill /F /PID {}", pid);
+                println!("Executing: {}", kill_cmd);
+                
+                let output = Command::new("taskkill")
+                    .args(&["/F", "/PID", &pid.to_string()])
+                    .output()
+                    .map_err(|e| format!("Failed to kill process {}: {}", pid, e))?;
+                
+                if !output.status.success() {
+                    let stderr = String::from_utf8_lossy(&output.stderr);
+                    println!("Kill failed: {}", stderr);
+                } else {
+                    println!("Successfully killed process: {}", pid);
+                }
+            }
+        }
+        
+        #[cfg(target_os = "macos")]
+        {
+            // macOS: 使用 ps 查找进程
+            let find_cmd = vec!["ps", "aux"];
+            println!("Finding process: {:?}", find_cmd);
+            
+            let output = Command::new("ps")
+                .args(&["aux"])
+                .output()
+                .map_err(|e| format!("Failed to find emulator process: {}", e))?;
+            
+            let output_str = String::from_utf8_lossy(&output.stdout);
+            println!("Process list output (filtered):");
+            
+            // 查找包含 qemu-system 或 emulator 且包含模拟器ID的进程
+            let mut pids = Vec::new();
+            for line in output_str.lines() {
+                if (line.contains("qemu-system") || line.contains("/emulator")) && 
+                   (line.contains(&id) || line.contains(&serial)) {
+                    println!("Found matching process: {}", line);
+                    
+                    // 提取PID（第二列）
+                    let parts: Vec<&str> = line.split_whitespace().collect();
+                    if parts.len() > 1 {
+                        if let Ok(pid) = parts[1].parse::<u32>() {
+                            pids.push(pid);
+                        }
+                    }
+                }
+            }
+            
+            if pids.is_empty() {
+                println!("Cannot find process for emulator: {}, trying alternative method", id);
+                
+                // 尝试查找所有 qemu-system 进程
+                for line in output_str.lines() {
+                    if line.contains("qemu-system") || (line.contains("emulator") && line.contains("-avd")) {
+                        println!("Found emulator process: {}", line);
+                        
+                        let parts: Vec<&str> = line.split_whitespace().collect();
+                        if parts.len() > 1 {
+                            if let Ok(pid) = parts[1].parse::<u32>() {
+                                pids.push(pid);
+                            }
+                        }
+                    }
+                }
+            }
+            
+            if pids.is_empty() {
+                return Err(format!("Cannot find process for emulator: {}", id));
+            }
+            
+            // 强杀找到的进程
+            for pid in pids {
+                let kill_cmd = format!("kill -9 {}", pid);
+                println!("Executing: {}", kill_cmd);
+                
+                let output = Command::new("kill")
+                    .args(&["-9", &pid.to_string()])
+                    .output()
+                    .map_err(|e| format!("Failed to kill process {}: {}", pid, e))?;
+                
+                if !output.status.success() {
+                    let stderr = String::from_utf8_lossy(&output.stderr);
+                    println!("Kill failed: {}", stderr);
+                } else {
+                    println!("Successfully killed process: {}", pid);
+                }
+            }
+        }
+        
+        #[cfg(target_os = "linux")]
+        {
+            // Linux: 使用 ps 查找进程
+            let find_cmd = vec!["ps", "aux"];
+            println!("Finding process: {:?}", find_cmd);
+            
+            let output = Command::new("ps")
+                .args(&["aux"])
+                .output()
+                .map_err(|e| format!("Failed to find emulator process: {}", e))?;
+            
+            let output_str = String::from_utf8_lossy(&output.stdout);
+            println!("Process list output (filtered):");
+            
+            // 查找包含 qemu-system 或 emulator 且包含模拟器ID的进程
+            let mut pids = Vec::new();
+            for line in output_str.lines() {
+                if (line.contains("qemu-system") || line.contains("/emulator")) && 
+                   (line.contains(&id) || line.contains(&serial)) {
+                    println!("Found matching process: {}", line);
+                    
+                    // 提取PID（第二列）
+                    let parts: Vec<&str> = line.split_whitespace().collect();
+                    if parts.len() > 1 {
+                        if let Ok(pid) = parts[1].parse::<u32>() {
+                            pids.push(pid);
+                        }
+                    }
+                }
+            }
+            
+            if pids.is_empty() {
+                println!("Cannot find process for emulator: {}, trying alternative method", id);
+                
+                // 尝试查找所有模拟器进程
+                for line in output_str.lines() {
+                    if line.contains("qemu-system") || (line.contains("emulator") && line.contains("-avd")) {
+                        println!("Found emulator process: {}", line);
+                        
+                        let parts: Vec<&str> = line.split_whitespace().collect();
+                        if parts.len() > 1 {
+                            if let Ok(pid) = parts[1].parse::<u32>() {
+                                pids.push(pid);
+                            }
+                        }
+                    }
+                }
+            }
+            
+            if pids.is_empty() {
+                return Err(format!("Cannot find process for emulator: {}", id));
+            }
+            
+            // 强杀找到的进程
+            for pid in pids {
+                let kill_cmd = format!("kill -9 {}", pid);
+                println!("Executing: {}", kill_cmd);
+                
+                let output = Command::new("kill")
+                    .args(&["-9", &pid.to_string()])
+                    .output()
+                    .map_err(|e| format!("Failed to kill process {}: {}", pid, e))?;
+                
+                if !output.status.success() {
+                    let stderr = String::from_utf8_lossy(&output.stderr);
+                    println!("Kill failed: {}", stderr);
+                } else {
+                    println!("Successfully killed process: {}", pid);
+                }
+            }
+        }
+    } else {
+        // 正常关闭方式
+        println!("Normal shutdown mode for emulator: {}", id);
+        let kill_cmd = format!("{:?} -s {} emu kill", adb_path, serial);
+        println!("Executing: {}", kill_cmd);
+        
+        let kill_output = Command::new(&adb_path)
+            .args(&["-s", &serial, "emu", "kill"])
+            .output()
+            .map_err(|e| format!("Failed to stop emulator {}: {}", serial, e))?;
+        
+        if !kill_output.status.success() {
+            let stderr = String::from_utf8_lossy(&kill_output.stderr);
+            println!("Normal shutdown failed: {}", stderr);
+            return Err(format!("Failed to stop emulator {}: {}", serial, stderr));
+        }
+        
+        println!("Normal shutdown successful");
     }
     
     // Wait a moment for the emulator to shut down

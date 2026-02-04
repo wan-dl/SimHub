@@ -16,6 +16,7 @@ export const useSettingsStore = defineStore('settings', () => {
   const harmonyHdcPath = ref('')
   const xcodeHome = ref('')
   const screenshotDir = ref('')
+  const androidForceKill = ref(false)
 
   async function loadSettings() {
     try {
@@ -33,6 +34,7 @@ export const useSettingsStore = defineStore('settings', () => {
       harmonyHdcPath.value = settings.harmony_hdc_path
       xcodeHome.value = settings.xcode_home
       screenshotDir.value = settings.screenshot_dir
+      androidForceKill.value = settings.android_force_kill
     } catch (error) {
       console.error('Failed to load settings:', error)
     }
@@ -53,7 +55,8 @@ export const useSettingsStore = defineStore('settings', () => {
         harmony_emulator_path: harmonyEmulatorPath.value,
         harmony_hdc_path: harmonyHdcPath.value,
         xcode_home: xcodeHome.value,
-        screenshot_dir: screenshotDir.value
+        screenshot_dir: screenshotDir.value,
+        android_force_kill: androidForceKill.value
       }
     })
   }
@@ -72,6 +75,7 @@ export const useSettingsStore = defineStore('settings', () => {
     harmonyHdcPath,
     xcodeHome,
     screenshotDir,
+    androidForceKill,
     loadSettings,
     saveSettings
   }

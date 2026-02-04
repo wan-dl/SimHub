@@ -86,6 +86,11 @@
                 </n-button>
               </n-input-group>
             </n-form-item>
+            <n-form-item :label="t('settings.androidForceKill')">
+              <n-checkbox v-model:checked="settingsStore.androidForceKill" @update:checked="handleAutoSave">
+                {{ t('settings.androidForceKillDesc') }}
+              </n-checkbox>
+            </n-form-item>
           </n-form>
         </div>
 
@@ -164,7 +169,7 @@
 
 <script setup lang="ts">
 import { computed, ref } from 'vue'
-import { NForm, NFormItem, NSwitch, NInput, NInputGroup, NButton, NIcon, useMessage } from 'naive-ui'
+import { NForm, NFormItem, NSwitch, NCheckbox, NInput, NInputGroup, NButton, NIcon, useMessage } from 'naive-ui'
 import { ArrowBack } from '@vicons/ionicons5'
 import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'

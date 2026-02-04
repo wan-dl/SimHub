@@ -56,6 +56,8 @@
     "selectFolder": "选择文件夹",
     "screenshotDir": "截图存储目录",
     "selectScreenshotDir": "选择截图存储目录",
+    "androidForceKill": "模拟器退出",
+    "androidForceKillDesc": "关闭模拟器时强制终止进程",
     "save": "保存",
     "cancel": "取消"
   },

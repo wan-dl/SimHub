@@ -361,13 +361,43 @@ const handleStart = async (id: string) => {
     await emulatorStore.startEmulator(id)
     addConsoleLog('success', `模拟器启动成功: ${id}`)
     message.success(t('messages.startSuccess'))
-    await handleRefresh()
+    
+    // 启动后轮询检查状态，确保UI更新
+    let retries = 0
+    const maxRetries = 30 // 增加到30次，每次2秒，总共60秒
+    const checkStatus = async () => {
+      await handleRefresh()
+      const emulator = filteredEmulators.value.find(e => e.id === id || e.name === id)
+      
+      if (emulator?.status === 'running') {
+        // 状态已更新为运行中
+        startingEmulators.value.delete(id)
+        addConsoleLog('success', `模拟器 ${id} 已完全启动`)
+        return
+      }
+      
+      retries++
+      if (retries < maxRetries) {
+        // 继续轮询，每2秒检查一次
+        if (retries % 5 === 0) {
+          // 每10秒输出一次进度
+          addConsoleLog('info', `等待模拟器启动... (${retries * 2}秒)`)
+        }
+        setTimeout(checkStatus, 2000)
+      } else {
+        // 超时，停止轮询
+        startingEmulators.value.delete(id)
+        addConsoleLog('warning', `模拟器 ${id} 启动超时，但进程可能仍在启动中`)
+      }
+    }
+    
+    // 延迟2秒后开始检查
+    setTimeout(checkStatus, 2000)
   } catch (error) {
     const errorMsg = typeof error === 'string' ? error : (error instanceof Error ? error.message : JSON.stringify(error))
     addConsoleLog('error', `模拟器启动失败: ${id} - ${errorMsg}`)
     console.error('Start emulator error:', error)
     message.error(errorMsg)
-  } finally {
     startingEmulators.value.delete(id)
   }
 }
@@ -377,13 +407,37 @@ const handleStop = async (id: string) => {
     stoppingEmulators.value.add(id)
     await emulatorStore.stopEmulator(id)
     message.success(t('messages.stopSuccess'))
-    await handleRefresh()
+    
+    // 停止后轮询检查状态，确保UI更新
+    let retries = 0
+    const maxRetries = 10
+    const checkStatus = async () => {
+      await handleRefresh()
+      const emulator = filteredEmulators.value.find(e => e.id === id || e.name === id)
+      
+      if (emulator?.status === 'stopped' || !emulator) {
+        // 状态已更新为停止或模拟器不存在
+        stoppingEmulators.value.delete(id)
+        return
+      }
+      
+      retries++
+      if (retries < maxRetries) {
+        // 继续轮询
+        setTimeout(checkStatus, 1000)
+      } else {
+        // 超时，停止轮询
+        stoppingEmulators.value.delete(id)
+      }
+    }
+    
+    // 延迟1秒后开始检查
+    setTimeout(checkStatus, 1000)
   } catch (error) {
     const errorMsg = typeof error === 'string' ? error : (error instanceof Error ? error.message : JSON.stringify(error))
     addConsoleLog('error', `模拟器关闭失败: ${id} - ${errorMsg}`)
     console.error('Stop emulator error:', error)
     message.error(errorMsg)
-  } finally {
     stoppingEmulators.value.delete(id)
   }
 }
