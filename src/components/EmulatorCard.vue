@@ -5,7 +5,18 @@
       <div class="emulator-info">
         <div class="emulator-name">{{ emulator.name }}</div>
         <div class="emulator-details">
-          {{ emulator.deviceType }} · {{ emulator.osVersion }}
+          <template v-if="emulator.status === 'running'">
+            {{ emulator.id }}
+            <template v-if="emulator.osVersion">
+              · {{ emulator.osVersion }}
+            </template>
+          </template>
+          <template v-else>
+            {{ emulator.deviceType }}
+            <template v-if="emulator.osVersion">
+              · {{ emulator.osVersion }}
+            </template>
+          </template>
         </div>
       </div>
       <div class="emulator-actions">

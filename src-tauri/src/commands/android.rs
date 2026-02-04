@@ -75,6 +75,9 @@ pub async fn list_android_emulators() -> Result<Vec<AndroidEmulator>, String> {
         if let Ok(adb_output) = Command::new(&adb_path).arg("devices").output() {
             let devices = String::from_utf8_lossy(&adb_output.stdout);
             
+            // 创建一个映射来存储设备序列号到 AVD 名称的关系
+            let mut serial_to_avd: std::collections::HashMap<String, String> = std::collections::HashMap::new();
+            
             for line in devices.lines() {
                 if line.contains("emulator-") && line.contains("device") {
                     let parts: Vec<&str> = line.split_whitespace().collect();
@@ -86,17 +89,21 @@ pub async fn list_android_emulators() -> Result<Vec<AndroidEmulator>, String> {
                         {
                             let output_str = String::from_utf8_lossy(&avd_output.stdout);
                             if let Some(avd_name) = output_str.lines().next() {
-                                let avd_name = avd_name.trim();
-                                // Find matching emulator and update status
-                                for emu in &mut emulators {
-                                    if emu.name == avd_name {
-                                        emu.status = "running".to_string();
-                                        emu.id = serial.to_string(); // Use device serial as ID
-                                        break;
-                                    }
-                                }
+                                let avd_name = avd_name.trim().to_string();
+                                serial_to_avd.insert(serial.to_string(), avd_name);
                             }
                         }
+                    }
+                }
+            }
+            
+            // 更新模拟器状态和 ID
+            for emu in &mut emulators {
+                for (serial, avd_name) in &serial_to_avd {
+                    if emu.name == *avd_name {
+                        emu.status = "running".to_string();
+                        emu.id = serial.clone();
+                        break;
                     }
                 }
             }
@@ -118,6 +125,28 @@ pub async fn list_android_emulators() -> Result<Vec<AndroidEmulator>, String> {
                     if output_str.contains(&format!("-avd {}", emu.name)) || 
                        output_str.contains(&format!("-avd \"{}\"", emu.name)) {
                         emu.status = "running".to_string();
+                        // 尝试通过 adb 获取设备序列号
+                        if let Ok(adb_output) = Command::new(&adb_path).arg("devices").output() {
+                            let devices = String::from_utf8_lossy(&adb_output.stdout);
+                            for line in devices.lines() {
+                                if line.contains("emulator-") && line.contains("device") {
+                                    let parts: Vec<&str> = line.split_whitespace().collect();
+                                    if let Some(serial) = parts.first() {
+                                        // 验证这个设备是否对应当前模拟器
+                                        if let Ok(avd_output) = Command::new(&adb_path)
+                                            .args(["-s", serial, "emu", "avd", "name"])
+                                            .output() 
+                                        {
+                                            let avd_name = String::from_utf8_lossy(&avd_output.stdout);
+                                            if avd_name.trim() == emu.name {
+                                                emu.id = serial.to_string();
+                                                break;
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
                     }
                 }
             }
@@ -136,6 +165,28 @@ pub async fn list_android_emulators() -> Result<Vec<AndroidEmulator>, String> {
                     // 检查是否有包含该模拟器名称的进程
                     if output_str.contains(&format!("-avd {}", emu.name)) {
                         emu.status = "running".to_string();
+                        // 尝试通过 adb 获取设备序列号
+                        if let Ok(adb_output) = Command::new(&adb_path).arg("devices").output() {
+                            let devices = String::from_utf8_lossy(&adb_output.stdout);
+                            for line in devices.lines() {
+                                if line.contains("emulator-") && line.contains("device") {
+                                    let parts: Vec<&str> = line.split_whitespace().collect();
+                                    if let Some(serial) = parts.first() {
+                                        // 验证这个设备是否对应当前模拟器
+                                        if let Ok(avd_output) = Command::new(&adb_path)
+                                            .args(["-s", serial, "emu", "avd", "name"])
+                                            .output() 
+                                        {
+                                            let avd_name = String::from_utf8_lossy(&avd_output.stdout);
+                                            if avd_name.trim() == emu.name {
+                                                emu.id = serial.to_string();
+                                                break;
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
                     }
                 }
             }
