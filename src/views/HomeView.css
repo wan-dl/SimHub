@@ -363,7 +363,7 @@
 .console-tab.active {
   background: white;
   color: #18a058;
-  border-left-color: #18a058;
+  /* border-left-color: #18a058; */
 }
 
 .tab-icon {

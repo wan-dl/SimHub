@@ -6,6 +6,7 @@ import router from './router'
 import zhCN from './i18n/zh-CN.json'
 import enUS from './i18n/en-US.json'
 import 'uno.css'
+import './assets/main.css'
 
 const i18n = createI18n({
   legacy: false,

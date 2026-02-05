@@ -1,0 +1,346 @@
+/* VSCode 风格的下拉选择框全局样式 */
+
+.n-select:hover {
+  border-color: none !important;
+}
+
+/* 选择框本身 */
+.n-base-selection {
+  background: #ffffff !important;
+  border: 1px solid #cecece !important;
+  border-radius: 2px !important;
+  box-shadow: none !important;
+  min-height: 26px !important;
+  font-size: 13px !important;
+  --n-border: 1px solid #cecece !important;
+  --n-border-hover: 1px solid #cecece !important;
+  --n-border-active: 1px solid #007ACC !important;
+  --n-border-focus: 1px solid #007ACC !important;
+  --n-box-shadow-hover: none !important;
+  --n-box-shadow-active: none !important;
+  --n-box-shadow-focus: none !important;
+}
+
+.n-base-selection:hover {
+  background: #ffffff !important;
+  border: 1px solid #cecece !important;
+  box-shadow: none !important;
+}
+
+.n-base-selection:hover .n-base-suffix {
+  color: #424242 !important;
+}
+
+.n-base-selection:hover .n-base-selection-label {
+  color: #3c3c3c !important;
+}
+
+.n-base-selection.n-base-selection--focus,
+.n-base-selection.n-base-selection--active {
+  background: #ffffff !important;
+  border: 1px solid #007ACC !important;
+  box-shadow: none !important;
+  outline: none !important;
+}
+
+.n-base-selection.n-base-selection--disabled {
+  background: #f3f3f3 !important;
+  border-color: #d4d4d4 !important;
+  color: #8c8c8c !important;
+  cursor: not-allowed !important;
+}
+
+.n-base-selection-label {
+  color: #3c3c3c !important;
+  font-size: 13px !important;
+  height: 24px !important;
+  line-height: 24px !important;
+}
+
+.n-base-selection-placeholder {
+  color: #8c8c8c !important;
+  font-size: 13px !important;
+}
+
+.n-base-selection .n-base-suffix {
+  color: #424242 !important;
+}
+
+.n-base-selection .n-base-selection-input {
+  padding-left: 8px !important;
+}
+
+/* 下拉菜单 */
+.n-base-select-menu {
+  background: #ffffff !important;
+  border: 1px solid #cecece !important;
+  border-radius: 0 !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.16) !important;
+  padding: 0 !important;
+}
+
+.n-base-select-option {
+  border-radius: 0 !important;
+  padding: 4px 8px !important;
+  margin: 0 !important;
+  font-size: 13px !important;
+  color: #3c3c3c !important;
+  min-height: 22px !important;
+  line-height: 22px !important;
+}
+
+.n-base-select-option:hover {
+  background: #e8e8e8 !important;
+  color: #3c3c3c !important;
+}
+
+.n-base-select-option.n-base-select-option--selected {
+  background: #e8e8e8 !important;
+  color: #3c3c3c !important;
+  font-weight: normal !important;
+}
+
+.n-base-select-option.n-base-select-option--pending {
+  background: #d4d4d4 !important;
+  color: #3c3c3c !important;
+}
+
+.n-base-select-option .n-base-select-option__content {
+  display: flex !important;
+  align-items: center !important;
+}
+
+/* Radio 按钮组 - VSCode 风格 */
+.n-radio-group {
+  background: transparent !important;
+  border: none !important;
+  padding: 0 !important;
+}
+
+.n-radio-button {
+  border: 1px solid #cecece !important;
+  border-radius: 2px !important;
+  font-size: 13px !important;
+  padding: 4px 12px !important;
+  margin-right: 4px !important;
+  background: #ffffff !important;
+  color: #3c3c3c !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  min-height: 26px !important;
+  line-height: 1 !important;
+}
+
+.n-radio-button:hover {
+  background: #e8e8e8 !important;
+  border: 1px solid #cecece !important;
+}
+
+.n-radio-button.n-radio-button--checked {
+  background: #007ACC !important;
+  color: #ffffff !important;
+  border: 1px solid #007ACC !important;
+}
+
+.n-radio-button .n-radio-button__state-border {
+  display: none !important;
+}
+
+.n-radio-button__label {
+  padding: 0 !important;
+  line-height: 1 !important;
+}
+
+/* Input Number - VSCode 风格 */
+.n-input-number {
+  background: #ffffff !important;
+  border: 1px solid #cecece !important;
+  border-radius: 2px !important;
+  box-shadow: none !important;
+}
+
+.n-input-number:hover {
+  border: 1px solid #cecece !important;
+}
+
+.n-input-number.n-input-number--focus {
+  border: 1px solid #007ACC !important;
+  outline: none !important;
+  box-shadow: none !important;
+}
+
+.n-input-number .n-input__input-el {
+  color: #3c3c3c !important;
+  font-size: 13px !important;
+}
+
+/* Date Picker - VSCode 风格 */
+.n-date-picker .n-input {
+  background: #ffffff !important;
+  border: 1px solid #cecece !important;
+  border-radius: 2px !important;
+  box-shadow: none !important;
+}
+
+.n-date-picker .n-input:hover {
+  border: 1px solid #cecece !important;
+}
+
+.n-date-picker .n-input.n-input--focus {
+  border: 1px solid #007ACC !important;
+  outline: none !important;
+  box-shadow: none !important;
+}
+
+.n-date-picker .n-input__input-el {
+  color: #3c3c3c !important;
+  font-size: 13px !important;
+}
+
+/* Input - VSCode 风格 */
+.n-input {
+  background: #ffffff !important;
+  border: 1px solid #cecece !important;
+  border-radius: 2px !important;
+  box-shadow: none !important;
+}
+
+/* .n-input:hover {
+  border: 1px solid #007ACC !important;
+} */
+
+.n-input.n-input--focus,
+.n-input.n-input--focus-within {
+  border: 1px solid #007ACC !important;
+  /* outline: 1px solid #007ACC !important; */
+  outline-offset: -1px !important;
+  box-shadow: none !important;
+}
+
+.n-input__input-el {
+  color: #3c3c3c !important;
+  font-size: 13px !important;
+}
+
+.n-input__placeholder {
+  color: #8c8c8c !important;
+}
+
+/* 确保所有输入框聚焦时都使用 #007ACC */
+.n-input--focus .n-input__border,
+.n-input--focus .n-input__state-border {
+  display: none !important;
+}
+
+.n-input-wrapper:focus-within .n-input {
+  border: 1px solid #007ACC !important;
+  outline: none !important;
+}
+
+/* 强制覆盖所有 Naive UI 输入框的边框和阴影样式 */
+.n-input__border,
+.n-input__state-border {
+  display: none !important;
+}
+
+/* Input Number 的边框覆盖 */
+.n-input-number .n-input__border,
+.n-input-number .n-input__state-border {
+  display: none !important;
+}
+
+/* Date Picker 的边框覆盖 */
+.n-date-picker .n-input__border,
+.n-date-picker .n-input__state-border {
+  display: none !important;
+}
+
+/* 移除所有绿色主题色 */
+.n-input--focus,
+.n-input-number--focus,
+.n-base-selection--focus {
+  --n-color-focus: #007ACC !important;
+  --n-border-focus: 1px solid #007ACC !important;
+  --n-border-hover: 1px solid #007ACC !important;
+  --n-box-shadow-focus: none !important;
+}
+
+/* 强制移除所有 Select 组件的绿色主题 */
+.n-select {
+  --n-color-hover: #ffffff !important;
+  --n-border-hover: 1px solid #cecece !important;
+  --n-box-shadow-hover: none !important;
+}
+
+.n-base-selection-overlay {
+  background: transparent !important;
+}
+
+/* 移除所有可能的绿色边框 */
+.n-base-selection__border,
+.n-base-selection__state-border {
+  display: none !important;
+}
+
+/* 隐藏下拉列表的空状态图标 */
+.n-base-select-menu__empty {
+  padding: 12px !important;
+}
+
+.n-base-select-menu__empty .n-empty {
+  padding: 0 !important;
+}
+
+.n-base-select-menu__empty .n-empty__icon {
+  display: none !important;
+}
+
+.n-base-select-menu__empty .n-empty__description {
+  color: #8c8c8c !important;
+  font-size: 13px !important;
+  margin-top: 0 !important;
+}
+
+/* 强制移除 Radio 按钮的所有绿色边框 */
+.n-radio-button::before,
+.n-radio-button::after {
+  display: none !important;
+}
+
+.n-radio-button--checked::before,
+.n-radio-button--checked::after {
+  display: none !important;
+}
+
+.n-radio-button .n-radio__dot,
+.n-radio-button .n-radio__dot-wrapper {
+  display: none !important;
+}
+
+/* 移除所有可能的边框伪元素 */
+.n-radio-button__state-border,
+.n-radio-button__border {
+  display: none !important;
+  border: none !important;
+}
+
+/* 确保选中状态没有绿色 */
+.n-radio-button.n-radio-button--checked {
+  background: #007ACC !important;
+  color: #ffffff !important;
+  border: 1px solid #007ACC !important;
+  box-shadow: none !important;
+}
+
+.n-radio-button.n-radio-button--checked:hover {
+  background: #005a9e !important;
+  border: 1px solid #005a9e !important;
+}
+
+/* 移除 focus 状态的绿色 */
+.n-radio-button:focus,
+.n-radio-button--checked:focus {
+  outline: none !important;
+  box-shadow: none !important;
+}

@@ -210,9 +210,6 @@ const levelOptions = [
 ]
 
 const renderPackageLabel = (option: any) => {
-  if (option.value === '') {
-    return h('span', { style: { fontWeight: 'bold' } }, option.label)
-  }
   return h('div', { style: { display: 'flex', alignItems: 'center', gap: '8px' } }, [
     h('span', option.label),
     option.isSystem ? h('span', { 
