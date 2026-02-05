@@ -58,8 +58,8 @@
 }
 
 .n-base-selection-placeholder {
-  color: #8c8c8c !important;
-  font-size: 13px !important;
+  color: #b0b0b0 !important;
+  font-size: 12px !important;
 }
 
 .n-base-selection .n-base-suffix {
@@ -224,7 +224,8 @@
 }
 
 .n-input__placeholder {
-  color: #8c8c8c !important;
+  color: #b0b0b0 !important;
+  font-size: 12px !important;
 }
 
 /* 确保所有输入框聚焦时都使用 #007ACC */
@@ -343,4 +344,33 @@
 .n-radio-button--checked:focus {
   outline: none !important;
   box-shadow: none !important;
+}
+
+/* 全局滚动条样式 - 细且淡 */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.15);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 0, 0, 0.25);
+}
+
+::-webkit-scrollbar-corner {
+  background: transparent;
+}
+
+/* Firefox 滚动条样式 */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(0, 0, 0, 0.15) transparent;
 }

@@ -40,6 +40,8 @@ fn main() {
             settings::get_settings,
             settings::save_settings,
             settings::open_file,
+            settings::get_emulator_launch_params,
+            settings::save_emulator_launch_params,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

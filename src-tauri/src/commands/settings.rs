@@ -258,3 +258,93 @@ pub async fn save_settings(settings: Settings) -> Result<(), String> {
     save_settings_to_file(&settings)?;
     Ok(())
 }
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct EmulatorLaunchParams {
+    pub no_window: bool,
+    pub wipe_data: bool,
+    pub no_snapshot: bool,
+    pub dns_server: String,
+    pub gps_longitude: String,
+    pub gps_latitude: String,
+    pub memory: Option<i32>,
+    pub http_proxy: String,
+    pub cores: Option<i32>,
+    pub gpu: String,
+}
+
+impl Default for EmulatorLaunchParams {
+    fn default() -> Self {
+        Self {
+            no_window: false,
+            wipe_data: false,
+            no_snapshot: false,
+            dns_server: String::new(),
+            gps_longitude: String::new(),
+            gps_latitude: String::new(),
+            memory: None,
+            http_proxy: String::new(),
+            cores: None,
+            gpu: "auto".to_string(),
+        }
+    }
+}
+
+fn get_emulator_params_path(emulator_id: &str, emulator_type: &str) -> Result<PathBuf, String> {
+    let config_dir = dirs::config_dir()
+        .ok_or_else(|| "Failed to get config directory".to_string())?;
+    let app_dir = config_dir.join("SimHub").join("emulator_params");
+    
+    // 确保目录存在
+    fs::create_dir_all(&app_dir)
+        .map_err(|e| format!("Failed to create emulator params directory: {}", e))?;
+    
+    let filename = format!("{}_{}.json", emulator_type, emulator_id);
+    Ok(app_dir.join(filename))
+}
+
+#[tauri::command]
+pub async fn get_emulator_launch_params(emulator_id: String, emulator_type: String) -> Result<EmulatorLaunchParams, String> {
+    let params_path = get_emulator_params_path(&emulator_id, &emulator_type)?;
+    
+    if params_path.exists() {
+        let content = fs::read_to_string(&params_path)
+            .map_err(|e| format!("Failed to read emulator params file: {}", e))?;
+        let params: EmulatorLaunchParams = serde_json::from_str(&content)
+            .unwrap_or_default();
+        Ok(params)
+    } else {
+        Ok(EmulatorLaunchParams::default())
+    }
+}
+
+#[tauri::command]
+pub async fn save_emulator_launch_params(
+    emulator_id: String,
+    emulator_type: String,
+    params: EmulatorLaunchParams
+) -> Result<(), String> {
+    let params_path = get_emulator_params_path(&emulator_id, &emulator_type)?;
+    let content = serde_json::to_string_pretty(&params)
+        .map_err(|e| format!("Failed to serialize params: {}", e))?;
+    fs::write(&params_path, content)
+        .map_err(|e| format!("Failed to write params file: {}", e))?;
+    Ok(())
+}
+
+pub fn get_emulator_launch_params_sync(emulator_id: &str, emulator_type: &str) -> EmulatorLaunchParams {
+    let params_path = match get_emulator_params_path(emulator_id, emulator_type) {
+        Ok(path) => path,
+        Err(_) => return EmulatorLaunchParams::default(),
+    };
+    
+    if params_path.exists() {
+        if let Ok(content) = fs::read_to_string(&params_path) {
+            if let Ok(params) = serde_json::from_str::<EmulatorLaunchParams>(&content) {
+                return params;
+            }
+        }
+    }
+    
+    EmulatorLaunchParams::default()
+}

@@ -86,6 +86,7 @@
           @screenshot="handleScreenshot"
           @view-logs="handleViewLogs"
           @copy-id="handleCopyId"
+          @edit="handleEdit"
         />
       </div>
     </div>
@@ -434,6 +435,14 @@ const handleViewLogs = async (id: string) => {
 const handleCopyId = (id: string) => {
   navigator.clipboard.writeText(id)
   message.success(t('messages.copySuccess'))
+}
+
+const handleEdit = (id: string, type: string) => {
+  router.push({
+    name: 'emulator-edit',
+    params: { id },
+    query: { type }
+  })
 }
 
 const openScreenshot = async (path: string) => {

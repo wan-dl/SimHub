@@ -218,6 +218,9 @@ pub async fn start_android_emulator(id: String) -> Result<(), String> {
         return Err(format!("Emulator not found at: {:?}. Please check your Android SDK path in Settings.", emulator_path));
     }
     
+    // Load launch parameters
+    let params = crate::commands::settings::get_emulator_launch_params_sync(&id, "android");
+    
     // Set up environment variables
     let mut cmd = Command::new(&emulator_path);
     cmd.arg("-avd")
@@ -226,6 +229,27 @@ pub async fn start_android_emulator(id: String) -> Result<(), String> {
         .env("ANDROID_SDK_ROOT", &android_home)
         .stdout(std::process::Stdio::piped())
         .stderr(std::process::Stdio::piped());
+    
+    // Apply launch parameters
+    if params.no_window {
+        cmd.arg("-no-window");
+    }
+    
+    if !params.dns_server.is_empty() {
+        cmd.arg("-dns-server").arg(&params.dns_server);
+    }
+    
+    if !params.gps_longitude.is_empty() && !params.gps_latitude.is_empty() {
+        cmd.arg("-gps").arg(format!("{},{}", params.gps_longitude, params.gps_latitude));
+    }
+    
+    if let Some(memory) = params.memory {
+        cmd.arg("-memory").arg(memory.to_string());
+    }
+    
+    if !params.http_proxy.is_empty() {
+        cmd.arg("-http-proxy").arg(&params.http_proxy);
+    }
     
     let mut child = cmd.spawn()
         .map_err(|e| format!("Failed to start emulator: {}", e))?;

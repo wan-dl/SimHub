@@ -19,6 +19,7 @@
           @screenshot="$emit('screenshot', $event)"
           @view-logs="$emit('viewLogs', $event)"
           @copy-id="$emit('copyId', $event)"
+          @edit="(id, type) => $emit('edit', id, type)"
         />
       </div>
     </n-spin>
@@ -47,6 +48,7 @@ defineEmits<{
   screenshot: [id: string]
   viewLogs: [id: string]
   copyId: [id: string]
+  edit: [id: string, type: string]
 }>()
 
 const filteredEmulators = computed(() => {

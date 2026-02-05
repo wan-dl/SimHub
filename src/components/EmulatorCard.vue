@@ -35,6 +35,17 @@
         <n-button v-else size="small" :loading="isStopping" :disabled="isStopping" @click="$emit('stop', emulator.id)" quaternary circle class="stop-button">
           <img src="@/assets/closed.svg" class="action-icon" />
         </n-button>
+        <n-button
+          v-if="emulator.type === 'android' || emulator.type === 'harmony'"
+          size="small"
+          quaternary
+          circle
+          class="edit-button"
+          @click="$emit('edit', emulator.id, emulator.type)"
+          title="编辑启动参数"
+        >
+          <img src="@/assets/edit.svg" class="action-icon" />
+        </n-button>
         <n-dropdown :options="dropdownOptions" @select="handleAction">
           <n-button size="small" quaternary circle>
             <img src="@/assets/more.svg" class="action-icon" />
@@ -65,6 +76,7 @@ const emit = defineEmits<{
   screenshot: [id: string];
   viewLogs: [id: string];
   copyId: [id: string];
+  edit: [id: string, type: string];
 }>();
 
 const { t } = useI18n();
@@ -159,6 +171,14 @@ const handleAction = (key: string) => {
 
 .stop-button {
   color: #424242;
+}
+
+.edit-button {
+  color: #424242;
+}
+
+.edit-button:hover {
+  color: #333;
 }
 
 .action-icon {
