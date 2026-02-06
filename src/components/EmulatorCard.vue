@@ -141,7 +141,7 @@ const handleAction = (key: string) => {
 }
 
 .emulator-name {
-  font-size: 14px;
+  font-size: 16px;
   font-weight: 500;
   margin-bottom: 2px;
   color: #333;

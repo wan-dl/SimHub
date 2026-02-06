@@ -392,19 +392,56 @@ onMounted(() => {
   z-index: 100;
 }
 
-.edit-footer .n-button--primary {
-  background-color: rgb(31, 143, 255) !important;
-  border-color: rgb(31, 143, 255) !important;
+.edit-footer :deep(.n-button.n-button--primary-type) {
+  background-color: #1976d2 !important;
+  border-color: #1976d2 !important;
+  border-radius: 8px !important;
+  color: #ffffff !important;
 }
 
-.edit-footer .n-button--primary:hover {
-  background-color: rgb(20, 130, 240) !important;
-  border-color: rgb(20, 130, 240) !important;
+.edit-footer :deep(.n-button.n-button--primary-type:hover) {
+  background-color: #1565c0 !important;
+  border-color: #1565c0 !important;
 }
 
-.edit-footer .n-button--primary:active {
-  background-color: rgb(10, 120, 230) !important;
-  border-color: rgb(10, 120, 230) !important;
+.edit-footer :deep(.n-button.n-button--primary-type:active) {
+  background-color: #0d47a1 !important;
+  border-color: #0d47a1 !important;
+}
+
+.edit-footer :deep(.n-button.n-button--primary-type:focus) {
+  background-color: #1976d2 !important;
+  border-color: #1976d2 !important;
+}
+
+.edit-footer :deep(.n-button.n-button--primary-type .n-button__border) {
+  border-radius: 8px !important;
+  border-color: #1976d2 !important;
+}
+
+.edit-footer :deep(.n-button.n-button--primary-type .n-button__state-border) {
+  border-radius: 8px !important;
+  border-color: #1976d2 !important;
+}
+
+.edit-footer :deep(.n-button.n-button--primary-type .n-button__content) {
+  color: #ffffff !important;
+}
+
+/* 移除 focus 时的绿色边框 */
+.edit-footer :deep(.n-button.n-button--primary-type:focus .n-button__border),
+.edit-footer :deep(.n-button.n-button--primary-type:focus .n-button__state-border) {
+  border-color: #1976d2 !important;
+}
+
+.edit-footer :deep(.n-button.n-button--primary-type:hover .n-button__border),
+.edit-footer :deep(.n-button.n-button--primary-type:hover .n-button__state-border) {
+  border-color: #1565c0 !important;
+}
+
+.edit-footer :deep(.n-button.n-button--primary-type:active .n-button__border),
+.edit-footer :deep(.n-button.n-button--primary-type:active .n-button__state-border) {
+  border-color: #0d47a1 !important;
 }
 
 /* 统一输入组件高度 */
