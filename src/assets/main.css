@@ -219,6 +219,36 @@
   border: 1px solid #cecece !important;
   border-radius: 5px !important;
   box-shadow: none !important;
+  height: 34px !important;
+}
+
+/* 输入框组内按钮与输入框等高 */
+.n-input-group .n-button {
+  height: 34px !important;
+}
+
+/* Button - 统一边框颜色，移除绿色主题 */
+.n-button--default-type {
+  --n-border: 1px solid #cecece !important;
+  --n-border-hover: 1px solid #007ACC !important;
+  --n-border-focus: 1px solid #007ACC !important;
+  --n-border-pressed: 1px solid #005a9e !important;
+  --n-text-color-hover: #007ACC !important;
+  --n-text-color-focus: #007ACC !important;
+  --n-text-color-pressed: #005a9e !important;
+  --n-ripple-color: #007ACC !important;
+}
+
+.n-button--primary-type {
+  --n-color: #007ACC !important;
+  --n-color-hover: #1a8ad4 !important;
+  --n-color-focus: #1a8ad4 !important;
+  --n-color-pressed: #005a9e !important;
+  --n-border: 1px solid #007ACC !important;
+  --n-border-hover: 1px solid #1a8ad4 !important;
+  --n-border-focus: 1px solid #1a8ad4 !important;
+  --n-border-pressed: 1px solid #005a9e !important;
+  --n-ripple-color: #007ACC !important;
 }
 
 /* .n-input:hover {
