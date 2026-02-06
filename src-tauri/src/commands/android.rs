@@ -2,6 +2,7 @@ use serde::{Deserialize, Serialize};
 use std::process::Command;
 use std::sync::Mutex;
 use tokio;
+use tauri::Emitter;
 use arboard::{Clipboard, ImageData};
 use image::GenericImageView;
 use std::process::Stdio;
@@ -199,7 +200,7 @@ pub async fn list_android_emulators() -> Result<Vec<AndroidEmulator>, String> {
 }
 
 #[tauri::command]
-pub async fn start_android_emulator(id: String) -> Result<(), String> {
+pub async fn start_android_emulator(id: String, app: tauri::AppHandle) -> Result<(), String> {
     // Get ANDROID_HOME from settings or environment
     let android_home = crate::commands::settings::get_android_home()
         .ok_or_else(|| "Android SDK path not configured. Please set it in Settings.".to_string())?;
@@ -250,6 +251,30 @@ pub async fn start_android_emulator(id: String) -> Result<(), String> {
     if !params.http_proxy.is_empty() {
         cmd.arg("-http-proxy").arg(&params.http_proxy);
     }
+    
+    // 构建完整的启动命令字符串用于日志输出
+    let cmd_str = format!("{:?} -avd {}{}{}{}{}{}", 
+        emulator_path,
+        id,
+        if params.no_window { " -no-window" } else { "" },
+        if !params.dns_server.is_empty() { format!(" -dns-server {}", params.dns_server) } else { String::new() },
+        if !params.gps_longitude.is_empty() && !params.gps_latitude.is_empty() { 
+            format!(" -gps {},{}", params.gps_longitude, params.gps_latitude) 
+        } else { 
+            String::new() 
+        },
+        if let Some(memory) = params.memory { format!(" -memory {}", memory) } else { String::new() },
+        if !params.http_proxy.is_empty() { format!(" -http-proxy {}", params.http_proxy) } else { String::new() }
+    );
+    
+    // 发送启动命令到前端控制台
+    let _ = app.emit("add-log", serde_json::json!({
+        "type": "command",
+        "message": cmd_str.clone(),
+        "source": "app"
+    }));
+    
+    println!("启动 Android 模拟器命令: {}", cmd_str);
     
     let mut child = cmd.spawn()
         .map_err(|e| format!("Failed to start emulator: {}", e))?;

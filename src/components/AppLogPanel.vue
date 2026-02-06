@@ -6,7 +6,7 @@
           <n-button text size="small" @click="$emit('update:collapsed', true)" class="collapse-btn">
             <img src="@/assets/silder.svg" class="slider-icon" />
           </n-button>
-          <span class="console-title">控制台</span>
+          <span class="console-title">操作日志</span>
         </div>
       </div>
       
@@ -81,7 +81,7 @@ interface Props {
 
 const props = defineProps<Props>()
 
-const emit = defineEmits<{
+defineEmits<{
   'update:collapsed': [value: boolean]
   'openScreenshot': [path: string]
   'copyPath': [path: string]

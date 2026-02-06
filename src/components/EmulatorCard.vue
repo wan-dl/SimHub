@@ -3,8 +3,8 @@
     <div class="card-content">
       <div class="drag-handle" :class="{ 'running': emulator.status === 'running' }">⋮⋮</div>
       <div class="emulator-info">
-        <div class="emulator-name">{{ emulator.name }}</div>
-        <div class="emulator-details">
+        <div class="emulator-name" :class="{ 'running': emulator.status === 'running' }">{{ emulator.name }}</div>
+        <div class="emulator-details" :class="{ 'running': emulator.status === 'running' }">
           <template v-if="emulator.status === 'running'">
             {{ emulator.id }}
             <template v-if="emulator.osVersion">
@@ -144,11 +144,22 @@ const handleAction = (key: string) => {
   font-size: 14px;
   font-weight: 500;
   margin-bottom: 2px;
+  color: #333;
+  transition: color 0.2s;
+}
+
+.emulator-name.running {
+  color: #18a058;
 }
 
 .emulator-details {
   font-size: 11px;
   color: #999;
+  transition: color 0.2s;
+}
+
+.emulator-details.running {
+  color: #36ad6a;
 }
 
 .emulator-actions {

@@ -11,7 +11,7 @@
       </div>
     </div>
     <div class="edit-content">
-      <div class="content-wrapper">
+      <div class="content-wrapper" v-if="loaded">
         <n-form label-placement="left" label-width="0">
           <!-- Android 专属参数 -->
           <template v-if="emulatorType === 'android'">
@@ -185,6 +185,7 @@ const memory = ref<number | null>(null)
 const httpProxy = ref('')
 const cores = ref<number | null>(null)
 const gpu = ref('auto')
+const loaded = ref(false)
 
 const gpuOptions = [
   { label: 'auto', value: 'auto' },
@@ -224,6 +225,8 @@ const loadSettings = async () => {
     }
   } catch (error) {
     console.error('Failed to load settings:', error)
+  } finally {
+    loaded.value = true
   }
 }
 
@@ -402,5 +405,23 @@ onMounted(() => {
 .edit-footer .n-button--primary:active {
   background-color: rgb(10, 120, 230) !important;
   border-color: rgb(10, 120, 230) !important;
+}
+
+/* 统一输入组件高度 */
+.emulator-edit-view :deep(.n-input),
+.emulator-edit-view :deep(.n-input-number),
+.emulator-edit-view :deep(.n-base-selection) {
+  height: 32px !important;
+  min-height: 32px !important;
+}
+
+.emulator-edit-view :deep(.n-input-number .n-input) {
+  height: auto !important;
+  min-height: auto !important;
+}
+
+.emulator-edit-view :deep(.n-base-selection-label) {
+  height: 30px !important;
+  line-height: 30px !important;
 }
 </style>

@@ -13,15 +13,31 @@
 <script setup lang="ts">
 import { computed, watch, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { useRouter } from 'vue-router'
 import { NConfigProvider, NMessageProvider, NDialogProvider, NNotificationProvider, darkTheme, zhCN, dateZhCN, enUS, dateEnUS } from 'naive-ui'
 import { useSettingsStore } from '@/stores/settings'
+import { useLogsStore } from '@/stores/logs'
+import { listen } from '@tauri-apps/api/event'
 
 const settingsStore = useSettingsStore()
+const logsStore = useLogsStore()
 const { locale: i18nLocale } = useI18n()
+const router = useRouter()
 
 // 应用启动时加载设置
 onMounted(async () => {
   await settingsStore.loadSettings()
+  
+  // 监听菜单事件
+  await listen('navigate-to-settings', () => {
+    router.push('/settings')
+  })
+  
+  // 监听后端日志事件
+  await listen('add-log', (event: any) => {
+    const { type, message, source } = event.payload
+    logsStore.addLog(type, message, source)
+  })
 })
 
 // 监听语言变化并更新 i18n

@@ -138,6 +138,7 @@ import { Refresh } from '@vicons/ionicons5'
 import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
 import { useEmulatorStore } from '@/stores/emulator'
+import { useLogsStore } from '@/stores/logs'
 import EmulatorList from '@/components/EmulatorList.vue'
 import AppLogPanel from '@/components/AppLogPanel.vue'
 import DeviceLogPanel from '@/components/DeviceLogPanel.vue'
@@ -148,11 +149,11 @@ const router = useRouter()
 const message = useMessage()
 const dialog = useDialog()
 const emulatorStore = useEmulatorStore()
+const logsStore = useLogsStore()
 
 const isMacOS = ref(false)
 const activeTab = ref(localStorage.getItem('activeTab') || 'android')
 const searchText = ref('')
-const consoleLogs = ref<Array<{type: string, message: string, time: string, path?: string}>>([])
 const consoleCollapsed = ref(true)
 const consoleTab = ref<'app' | 'device'>('app')
 const consolePanelWidth = ref(500)
@@ -164,11 +165,21 @@ const selectedLogDevice = ref<string>('')
 const showKeywordFilter = ref(false)
 const timeFilterType = ref<'all' | 'recent' | 'since'>('all')
 const recentMinutes = ref(5)
-const sinceTime = ref('')
+const sinceTime = ref<number | null>(null)
 const logFilter = ref({
   level: 'all',
   keyword: '',
   packageName: ''
+})
+
+// 从全局日志 store 获取应用日志
+const consoleLogs = computed(() => {
+  return logsStore.getLogsBySource('app').map(log => ({
+    type: log.type,
+    message: log.message,
+    time: new Date(log.timestamp).toLocaleTimeString(),
+    path: undefined // 如果需要路径，可以扩展 LogEntry
+  }))
 })
 const deviceLogPanelRef = ref<any>(null)
 
@@ -195,8 +206,8 @@ const updateLogFilter = (key: string, value: string) => {
 }
 
 const addConsoleLog = (type: string, message: string, path?: string) => {
-  const time = new Date().toLocaleTimeString()
-  consoleLogs.value.push({ type, message, time, path })
+  logsStore.addLog(type as any, message, 'app')
+  
   // 只在错误时自动展开控制台
   if (type === 'error') {
     consoleCollapsed.value = false
@@ -293,9 +304,9 @@ const handleRefresh = async () => {
 const handleStart = async (id: string) => {
   try {
     startingEmulators.value.add(id)
-    addConsoleLog('info', `正在启动模拟器: ${id}`)
+    logsStore.addLog('info', `正在启动模拟器: ${id}`, 'app')
     await emulatorStore.startEmulator(id)
-    addConsoleLog('success', `模拟器启动成功: ${id}`)
+    logsStore.addLog('success', `模拟器启动成功: ${id}`, 'app')
     message.success(t('messages.startSuccess'))
     
     // 启动后轮询检查状态，确保UI更新
@@ -308,7 +319,7 @@ const handleStart = async (id: string) => {
       if (emulator?.status === 'running') {
         // 状态已更新为运行中
         startingEmulators.value.delete(id)
-        addConsoleLog('success', `模拟器 ${id} 已完全启动`)
+        logsStore.addLog('success', `模拟器 ${id} 已完全启动`, 'app')
         return
       }
       
@@ -317,13 +328,13 @@ const handleStart = async (id: string) => {
         // 继续轮询，每2秒检查一次
         if (retries % 5 === 0) {
           // 每10秒输出一次进度
-          addConsoleLog('info', `等待模拟器启动... (${retries * 2}秒)`)
+          logsStore.addLog('info', `等待模拟器启动... (${retries * 2}秒)`, 'app')
         }
         setTimeout(checkStatus, 2000)
       } else {
         // 超时，停止轮询
         startingEmulators.value.delete(id)
-        addConsoleLog('warning', `模拟器 ${id} 启动超时，但进程可能仍在启动中`)
+        logsStore.addLog('warning', `模拟器 ${id} 启动超时，但进程可能仍在启动中`, 'app')
       }
     }
     
@@ -331,7 +342,7 @@ const handleStart = async (id: string) => {
     setTimeout(checkStatus, 2000)
   } catch (error) {
     const errorMsg = typeof error === 'string' ? error : (error instanceof Error ? error.message : JSON.stringify(error))
-    addConsoleLog('error', `模拟器启动失败: ${id} - ${errorMsg}`)
+    logsStore.addLog('error', `模拟器启动失败: ${id} - ${errorMsg}`, 'app')
     console.error('Start emulator error:', error)
     message.error(errorMsg)
     startingEmulators.value.delete(id)

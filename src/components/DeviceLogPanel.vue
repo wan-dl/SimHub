@@ -85,7 +85,7 @@
         <n-input-number
           v-if="timeFilterType === 'recent'"
           :value="recentMinutes"
-          @update:value="$emit('update:recentMinutes', $event)"
+          @update:value="(value: number | null) => value && emit('update:recentMinutes', value)"
           size="small"
           :min="1"
           :max="60"
@@ -95,7 +95,7 @@
         <n-date-picker
           v-if="timeFilterType === 'since'"
           :value="sinceTime"
-          @update:value="$emit('update:sinceTime', $event)"
+          @update:value="(value: number | null) => emit('update:sinceTime', value)"
           type="datetime"
           size="small"
           clearable
@@ -176,7 +176,7 @@ interface Props {
   showKeywordFilter: boolean
   timeFilterType: 'all' | 'recent' | 'since'
   recentMinutes: number
-  sinceTime: string
+  sinceTime: number | null
 }
 
 const props = defineProps<Props>()
@@ -187,7 +187,7 @@ const emit = defineEmits<{
   'update:showKeywordFilter': [value: boolean]
   'update:timeFilterType': [value: string]
   'update:recentMinutes': [value: number]
-  'update:sinceTime': [value: string]
+  'update:sinceTime': [value: number | null]
   'updateFilter': [key: string, value: string]
   'switchToApp': []
   'logError': [message: string]

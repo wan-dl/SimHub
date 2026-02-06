@@ -8,7 +8,7 @@
 .n-base-selection {
   background: #ffffff !important;
   border: 1px solid #cecece !important;
-  border-radius: 2px !important;
+  border-radius: 5px !important;
   box-shadow: none !important;
   min-height: 26px !important;
   font-size: 13px !important;
@@ -170,6 +170,21 @@
   box-shadow: none !important;
 }
 
+/* n-input-number 内部的 n-input 不显示边框 */
+.n-input-number .n-input {
+  border: none !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  border-radius: 0 !important;
+}
+
+.n-input-number .n-input.n-input--focus,
+.n-input-number .n-input.n-input--focus-within {
+  border: none !important;
+  outline: none !important;
+  box-shadow: none !important;
+}
+
 .n-input-number .n-input__input-el {
   color: #3c3c3c !important;
   font-size: 13px !important;
@@ -199,10 +214,10 @@
 }
 
 /* Input - VSCode 风格 */
-.n-input {
+.n-input, .n-input-number {
   background: #ffffff !important;
   border: 1px solid #cecece !important;
-  border-radius: 2px !important;
+  border-radius: 5px !important;
   box-shadow: none !important;
 }
 
@@ -272,6 +287,7 @@
   --n-color-hover: #ffffff !important;
   --n-border-hover: 1px solid #cecece !important;
   --n-box-shadow-hover: none !important;
+  border-radius: 5px !important;
 }
 
 .n-base-selection-overlay {
@@ -348,29 +364,53 @@
 
 /* 全局滚动条样式 - 细且淡 */
 ::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
+  width: 6px !important;
+  height: 6px !important;
 }
 
 ::-webkit-scrollbar-track {
-  background: transparent;
+  background: transparent !important;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: rgba(0, 0, 0, 0.15);
-  border-radius: 4px;
+  background: rgba(0, 0, 0, 0.08) !important;
+  border-radius: 3px !important;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(0, 0, 0, 0.25);
+  background: rgba(0, 0, 0, 0.08) !important;
+}
+
+::-webkit-scrollbar-thumb:active {
+  background: rgba(0, 0, 0, 0.08) !important;
 }
 
 ::-webkit-scrollbar-corner {
-  background: transparent;
+  background: transparent !important;
 }
 
 /* Firefox 滚动条样式 */
 * {
   scrollbar-width: thin;
-  scrollbar-color: rgba(0, 0, 0, 0.15) transparent;
+  scrollbar-color: rgba(0, 0, 0, 0.08) transparent;
+}
+
+
+/* Message 提示样式 */
+.n-message-wrapper .n-message {
+  border-radius: 8px !important;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.1) !important;
+  padding: 8px 16px !important;
+  font-size: 13px !important;
+  min-width: 200px !important;
+}
+
+.n-message-wrapper .n-message--success-type {
+  background-color: #f0faf4 !important;
+  border: 1px solid #d4f0e0 !important;
+}
+
+.n-message-wrapper .n-message--error-type {
+  background-color: #fef2f2 !important;
+  border: 1px solid #fde0e0 !important;
 }
