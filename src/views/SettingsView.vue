@@ -1,6 +1,6 @@
 <template>
   <div class="settings-view">
-    <div class="header">
+    <div class="header" data-tauri-drag-region>
       <div class="header-left">
         <n-button text @click="router.back()">
           <template #icon>
@@ -364,8 +364,10 @@ const handleAutoSave = async () => {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 16px 24px;
+  padding: 0 24px;
+  height: 52px;
   border-bottom: 1px solid #e0e0e0;
+  -webkit-app-region: drag;
 }
 
 .header-left {
@@ -373,6 +375,7 @@ const handleAutoSave = async () => {
   align-items: center;
   gap: 16px;
   flex: 1;
+  -webkit-app-region: no-drag;
 }
 
 .header-left h3 {
@@ -385,6 +388,7 @@ const handleAutoSave = async () => {
   display: flex;
   justify-content: center;
   flex: 1;
+  -webkit-app-region: no-drag;
 }
 
 .header-right {

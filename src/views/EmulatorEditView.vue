@@ -1,6 +1,6 @@
 <template>
   <div class="emulator-edit-view">
-    <div class="edit-header">
+    <div class="edit-header" data-tauri-drag-region>
       <div class="header-left">
         <n-button text @click="goBack">
           <template #icon>
@@ -272,14 +272,17 @@ onMounted(() => {
 .edit-header {
   display: flex;
   align-items: center;
-  padding: 16px 24px;
+  padding: 0 24px;
+  height: 52px;
   border-bottom: 1px solid #e0e0e0;
+  -webkit-app-region: drag;
 }
 
 .header-left {
   display: flex;
   align-items: center;
   gap: 16px;
+  -webkit-app-region: no-drag;
 }
 
 .header-left h2 {

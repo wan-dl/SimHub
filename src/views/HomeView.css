@@ -7,6 +7,17 @@
   touch-action: pan-y;
 }
 
+/* 顶部全宽拖拽区域 */
+.drag-region {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 28px;
+  z-index: 100;
+  -webkit-app-region: drag;
+}
+
 /* 第一列：平台侧边栏 */
 .platform-sidebar {
   width: 200px;
@@ -18,21 +29,26 @@
 }
 
 .sidebar-header {
-  padding: 12px 20px 0 20px;
+  padding: 6px 20px 0 80px;
   border-bottom: 1px solid #e0e0e0;
   display: flex;
   justify-content: space-between;
-  height: 61px;
+  height: 52px;
+  -webkit-app-region: drag;
 }
 
 .sidebar-header h3 {
-  padding-top: 13px;
+  padding-top: 8px;
   font-size: 16px;
   font-weight: 600;
+  -webkit-app-region: drag;
 }
 
 .collapse-btn {
   color: #666;
+  -webkit-app-region: no-drag;
+  position: relative;
+  z-index: 200;
 }
 
 .slider-icon {
@@ -108,8 +124,9 @@
   justify-content: space-between;
   align-items: center;
   border-bottom: 1px solid #e0e0e0;
-  height: 61px;
-  padding: 12px 20px 0 20px;
+  height: 52px;
+  padding: 0 20px;
+  -webkit-app-region: drag;
 }
 
 .device-header-left {
@@ -121,19 +138,24 @@
 
 .expand-btn {
   color: #666;
+  -webkit-app-region: no-drag;
+  position: relative;
+  z-index: 200;
 }
 
 .device-header h4 {
   margin: 0;
   font-size: 16px;
   font-weight: 600;
-  padding-top: 3px;
 }
 
 .device-actions {
   display: flex;
   gap: 8px;
   align-items: center;
+  -webkit-app-region: no-drag;
+  position: relative;
+  z-index: 200;
 }
 
 .console-icon {
@@ -205,9 +227,10 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 12px 16px;
+  padding: 0 16px;
   border-bottom: 1px solid #e0e0e0;
-  height: 61px;
+  height: 52px;
+  -webkit-app-region: drag;
 }
 
 .console-header-left {
@@ -226,6 +249,7 @@
   display: flex;
   align-items: center;
   gap: 4px;
+  -webkit-app-region: no-drag;
 }
 
 .console-filters {

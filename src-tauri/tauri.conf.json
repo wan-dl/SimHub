@@ -28,14 +28,16 @@
   "app": {
     "windows": [
       {
-        "title": "Multi-platform emulator management",
+        "title": "SimHub",
         "width": 828,
         "height": 518,
         "minWidth": 690,
         "minHeight": 414,
         "resizable": true,
         "fullscreen": false,
-        "devtools": true
+        "devtools": true,
+        "titleBarStyle": "Overlay",
+        "hiddenTitle": true
       }
     ],
     "security": {

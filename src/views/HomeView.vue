@@ -1,8 +1,10 @@
 <template>
   <div class="home-view">
+    <!-- 顶部拖拽区域 -->
+    <div class="drag-region" data-tauri-drag-region></div>
     <!-- 第一列：平台选择 -->
     <div v-if="!sidebarCollapsed" class="platform-sidebar">
-      <div class="sidebar-header">
+      <div class="sidebar-header" data-tauri-drag-region>
         <h3>{{ t('app.title') }}</h3>
         <n-button text size="small" @click="sidebarCollapsed = true" class="collapse-btn">
           <img src="@/assets/silder.svg" class="slider-icon" />
@@ -42,7 +44,7 @@
 
     <!-- 第二列：设备列表 -->
     <div class="device-panel">
-      <div class="device-header">
+      <div class="device-header" data-tauri-drag-region>
         <div 
           class="device-header-left" 
           :class="{ 'sidebar-collapsed': sidebarCollapsed }"
