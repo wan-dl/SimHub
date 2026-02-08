@@ -289,7 +289,7 @@ watch(consoleCollapsed, async (collapsed) => {
       // 确保控制台宽度不会导致第二列小于 50px
       const sidebarWidth = sidebarCollapsed.value ? 0 : 200
       const handleWidth = 5
-      const minDevicePanelWidth = 50
+      const minDevicePanelWidth = 300
       const maxConsoleWidth = currentSize.width - sidebarWidth - handleWidth - minDevicePanelWidth
       
       // 如果当前控制台宽度太大，调整它
@@ -598,8 +598,8 @@ const startResize = (e: MouseEvent) => {
     // 计算拖动手柄宽度
     const handleWidth = 5
     
-    // 计算第二列可用的最大宽度（确保至少保留 50px）
-    const maxConsoleWidth = windowWidth - sidebarWidth - handleWidth - 50
+    // 计算第二列可用的最大宽度（确保至少保留 300px）
+    const maxConsoleWidth = windowWidth - sidebarWidth - handleWidth - 300
     
     // 限制最小和最大宽度
     const minWidth = 280

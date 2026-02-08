@@ -97,7 +97,7 @@
 /* 第二列：设备面板 */
 .device-panel {
   flex: 1;
-  min-width: 50px;
+  min-width: 300px;
   display: flex;
   flex-direction: column;
   overflow: hidden;
