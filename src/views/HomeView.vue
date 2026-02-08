@@ -67,7 +67,7 @@
             :placeholder="t('actions.search')"
             clearable
             size="small"
-            style="width: 180px"
+            style="min-width: 50px; max-width: 180px; width: 100%;"
           />
           <n-button @click="handleRefresh" size="small" quaternary circle>
             <template #icon>
