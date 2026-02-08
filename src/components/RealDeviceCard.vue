@@ -7,7 +7,7 @@
       <div class="device-info">
         <div class="device-name">{{ device.name }}</div>
         <div class="device-details">
-          {{ device.brand }} · {{ device.serial }}
+          {{ device.brand }} · <span class="device-serial" @click="handleCopySerial" :title="t('actions.copyId')">{{ device.serial }}</span>
         </div>
       </div>
       <div class="device-status">
@@ -67,6 +67,10 @@ const handleAction = (key: string) => {
   if (key === 'copyId') {
     emit('copyId', props.device.serial)
   }
+}
+
+const handleCopySerial = () => {
+  emit('copyId', props.device.serial)
 }
 </script>
 
@@ -129,6 +133,17 @@ const handleAction = (key: string) => {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+
+.device-serial {
+  color: #1976d2;
+  cursor: pointer;
+  transition: color 0.2s;
+}
+
+.device-serial:hover {
+  color: #1565c0;
+  text-decoration: underline;
 }
 
 .device-status {

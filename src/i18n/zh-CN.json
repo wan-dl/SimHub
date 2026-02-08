@@ -7,7 +7,7 @@
     "ios": "iOS",
     "android": "Android",
     "harmony": "Harmony",
-    "realDevice": "真机设备"
+    "realDevice": "USB真机"
   },
   "actions": {
     "refresh": "刷新",
