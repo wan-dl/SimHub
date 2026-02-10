@@ -1,5 +1,6 @@
 use serde::{Deserialize, Serialize};
 use std::process::Command;
+use tauri::Emitter;
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct IOSSimulator {
@@ -67,22 +68,37 @@ pub async fn list_ios_simulators() -> Result<Vec<IOSSimulator>, String> {
 }
 
 #[tauri::command]
-pub async fn start_ios_simulator(id: String) -> Result<(), String> {
+pub async fn start_ios_simulator(id: String, app: tauri::AppHandle) -> Result<(), String> {
     #[cfg(not(target_os = "macos"))]
     {
+        let _ = &app;
         return Err("iOS simulators are only available on macOS".to_string());
     }
 
     #[cfg(target_os = "macos")]
     {
-        Command::new("xcrun")
-            .args(&["simctl", "boot", &id])
-            .output()
+        let mut boot_cmd = Command::new("xcrun");
+        boot_cmd.args(&["simctl", "boot", &id]);
+        
+        let _ = app.emit("add-log", serde_json::json!({
+            "type": "command",
+            "message": format!("{:?}", boot_cmd),
+            "source": "app"
+        }));
+
+        boot_cmd.output()
             .map_err(|e| format!("Failed to boot simulator: {}", e))?;
 
-        Command::new("open")
-            .args(&["-a", "Simulator", "--args", "-CurrentDeviceUDID", &id])
-            .spawn()
+        let mut open_cmd = Command::new("open");
+        open_cmd.args(&["-a", "Simulator", "--args", "-CurrentDeviceUDID", &id]);
+        
+        let _ = app.emit("add-log", serde_json::json!({
+            "type": "command",
+            "message": format!("{:?}", open_cmd),
+            "source": "app"
+        }));
+
+        open_cmd.spawn()
             .map_err(|e| format!("Failed to open Simulator app: {}", e))?;
 
         Ok(())

@@ -252,20 +252,8 @@ pub async fn start_android_emulator(id: String, app: tauri::AppHandle) -> Result
         cmd.arg("-http-proxy").arg(&params.http_proxy);
     }
     
-    // 构建完整的启动命令字符串用于日志输出
-    let cmd_str = format!("{:?} -avd {}{}{}{}{}{}", 
-        emulator_path,
-        id,
-        if params.no_window { " -no-window" } else { "" },
-        if !params.dns_server.is_empty() { format!(" -dns-server {}", params.dns_server) } else { String::new() },
-        if !params.gps_longitude.is_empty() && !params.gps_latitude.is_empty() { 
-            format!(" -gps {},{}", params.gps_longitude, params.gps_latitude) 
-        } else { 
-            String::new() 
-        },
-        if let Some(memory) = params.memory { format!(" -memory {}", memory) } else { String::new() },
-        if !params.http_proxy.is_empty() { format!(" -http-proxy {}", params.http_proxy) } else { String::new() }
-    );
+    // 直接打印 Command 对象，确保日志与实际执行的命令一致
+    let cmd_str = format!("{:?}", cmd);
     
     // 发送启动命令到前端控制台
     let _ = app.emit("add-log", serde_json::json!({

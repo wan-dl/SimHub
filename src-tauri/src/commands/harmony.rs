@@ -1,5 +1,6 @@
 use serde::{Deserialize, Serialize};
 use std::process::Command;
+use tauri::Emitter;
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct HarmonyEmulator {
@@ -97,7 +98,7 @@ pub async fn list_harmony_emulators() -> Result<Vec<HarmonyEmulator>, String> {
 }
 
 #[tauri::command]
-pub async fn start_harmony_emulator(id: String) -> Result<(), String> {
+pub async fn start_harmony_emulator(id: String, app: tauri::AppHandle) -> Result<(), String> {
     let emulator_path = get_emulator_path()?;
     
     let emulator_location = crate::commands::settings::get_harmony_emulator_location()
@@ -106,9 +107,16 @@ pub async fn start_harmony_emulator(id: String) -> Result<(), String> {
     let image_location = crate::commands::settings::get_harmony_image_location()
         .ok_or_else(|| "Local Image Location not configured. Please set it in Settings.".to_string())?;
     
-    Command::new(&emulator_path)
-        .args(&["-hvd", &id, "-path", &emulator_location, "-imageRoot", &image_location])
-        .spawn()
+    let mut cmd = Command::new(&emulator_path);
+    cmd.args(&["-hvd", &id, "-path", &emulator_location, "-imageRoot", &image_location]);
+    
+    let _ = app.emit("add-log", serde_json::json!({
+        "type": "command",
+        "message": format!("{:?}", cmd),
+        "source": "app"
+    }));
+    
+    cmd.spawn()
         .map_err(|e| format!("Failed to start emulator: {}", e))?;
 
     Ok(())
