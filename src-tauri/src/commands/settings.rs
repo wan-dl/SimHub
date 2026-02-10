@@ -184,7 +184,20 @@ pub fn get_deveco_home() -> Option<String> {
     }
     
     // Fallback to environment variable
-    std::env::var("DEVECO_SDK_HOME").ok()
+    if let Ok(val) = std::env::var("DEVECO_SDK_HOME") {
+        return Some(val);
+    }
+    
+    // macOS 默认路径
+    #[cfg(target_os = "macos")]
+    {
+        let default_path = "/Applications/DevEco-Studio.app";
+        if std::path::Path::new(default_path).exists() {
+            return Some(default_path.to_string());
+        }
+    }
+    
+    None
 }
 
 pub fn get_harmony_emulator_location() -> Option<String> {
@@ -193,6 +206,18 @@ pub fn get_harmony_emulator_location() -> Option<String> {
             return Some(settings.harmony_emulator_location);
         }
     }
+    
+    // macOS 默认路径: $HOME/.Huawei/Emulator/deployed
+    #[cfg(target_os = "macos")]
+    {
+        if let Ok(home) = std::env::var("HOME") {
+            let default_path = format!("{}/.Huawei/Emulator/deployed", home);
+            if std::path::Path::new(&default_path).exists() {
+                return Some(default_path);
+            }
+        }
+    }
+    
     None
 }
 
@@ -202,6 +227,18 @@ pub fn get_harmony_image_location() -> Option<String> {
             return Some(settings.harmony_image_location);
         }
     }
+    
+    // macOS 默认路径: $HOME/Library/Huawei/Sdk/system-image
+    #[cfg(target_os = "macos")]
+    {
+        if let Ok(home) = std::env::var("HOME") {
+            let default_path = format!("{}/Library/Huawei/Sdk/system-image", home);
+            if std::path::Path::new(&default_path).exists() {
+                return Some(default_path);
+            }
+        }
+    }
+    
     None
 }
 
@@ -223,6 +260,19 @@ pub fn get_harmony_emulator_path() -> Option<String> {
             return Some(emulator_path);
         }
     }
+    
+    // 从 get_deveco_home() 获取（含默认路径 fallback）
+    if let Some(deveco_home) = get_deveco_home() {
+        let emulator_path = if cfg!(target_os = "macos") {
+            format!("{}/Contents/tools/emulator/Emulator", deveco_home)
+        } else if cfg!(target_os = "windows") {
+            format!("{}/tools/emulator/Emulator.exe", deveco_home)
+        } else {
+            format!("{}/tools/emulator/Emulator", deveco_home)
+        };
+        return Some(emulator_path);
+    }
+    
     None
 }
 
@@ -244,6 +294,19 @@ pub fn get_harmony_hdc_path() -> Option<String> {
             return Some(hdc_path);
         }
     }
+    
+    // 从 get_deveco_home() 获取（含默认路径 fallback）
+    if let Some(deveco_home) = get_deveco_home() {
+        let hdc_path = if cfg!(target_os = "macos") {
+            format!("{}/Contents/sdk/default/openharmony/toolchains/hdc", deveco_home)
+        } else if cfg!(target_os = "windows") {
+            format!("{}/sdk/default/openharmony/toolchains/hdc.exe", deveco_home)
+        } else {
+            format!("{}/sdk/default/openharmony/toolchains/hdc", deveco_home)
+        };
+        return Some(hdc_path);
+    }
+    
     None
 }
 
