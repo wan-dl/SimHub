@@ -227,7 +227,7 @@ const updateLogFilter = (key: string, value: string) => {
   logFilter.value[key as keyof typeof logFilter.value] = value
 }
 
-const addConsoleLog = (type: string, message: string, path?: string) => {
+const addConsoleLog = (type: string, message: string) => {
   logsStore.addLog(type as any, message, 'app')
   
   // 只在错误时自动展开控制台
@@ -466,10 +466,7 @@ const handleDelete = async (id: string) => {
       ghost: false
     },
     negativeButtonProps: {
-      quaternary: true,
-      style: {
-        color: '#333'
-      }
+      quaternary: true
     },
     onPositiveClick: async () => {
       try {
@@ -505,7 +502,7 @@ const handleScreenshot = async (id: string) => {
     const path = await emulatorStore.takeScreenshot(id)
     message.success(t('messages.screenshotSaved', { path }))
     // 将截图路径输出到控制台，标记为可点击的链接
-    addConsoleLog('screenshot', `截图已保存`, path)
+    addConsoleLog('screenshot', `截图已保存: ${path}`)
     consoleCollapsed.value = false
   } catch (error) {
     const errorMsg = typeof error === 'string' ? error : (error instanceof Error ? error.message : JSON.stringify(error))
