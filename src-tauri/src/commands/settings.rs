@@ -228,11 +228,11 @@ pub fn get_harmony_image_location() -> Option<String> {
         }
     }
     
-    // macOS 默认路径: $HOME/Library/Huawei/Sdk/system-image
+    // macOS 默认路径: $HOME/Library/Huawei/Sdk
     #[cfg(target_os = "macos")]
     {
         if let Ok(home) = std::env::var("HOME") {
-            let default_path = format!("{}/Library/Huawei/Sdk/system-image", home);
+            let default_path = format!("{}/Library/Huawei/Sdk", home);
             if std::path::Path::new(&default_path).exists() {
                 return Some(default_path);
             }
