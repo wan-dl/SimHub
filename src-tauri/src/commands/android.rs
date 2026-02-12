@@ -1,5 +1,4 @@
 use serde::{Deserialize, Serialize};
-use std::process::Command;
 use std::sync::Mutex;
 use tokio;
 use tauri::Emitter;
@@ -7,6 +6,7 @@ use arboard::{Clipboard, ImageData};
 use image::GenericImageView;
 use std::process::Stdio;
 use tokio::io::{AsyncBufReadExt, BufReader as TokioBufReader};
+use crate::utils::new_command;
 
 static LOGCAT_BUFFER: Mutex<Vec<String>> = Mutex::new(Vec::new());
 static LOGCAT_RUNNING: Mutex<bool> = Mutex::new(false);
@@ -36,7 +36,7 @@ pub async fn list_android_emulators() -> Result<Vec<AndroidEmulator>, String> {
         .join("emulator")
         .join(emulator_exe);
     
-    let output = Command::new(&emulator_path)
+    let output = new_command(&emulator_path)
         .arg("-list-avds")
         .env("ANDROID_HOME", &android_home)
         .env("ANDROID_SDK_ROOT", &android_home)
@@ -75,7 +75,7 @@ pub async fn list_android_emulators() -> Result<Vec<AndroidEmulator>, String> {
         .join(adb_exe);
     
     if adb_path.exists() {
-        if let Ok(adb_output) = Command::new(&adb_path).arg("devices").output() {
+        if let Ok(adb_output) = new_command(&adb_path).arg("devices").output() {
             let devices = String::from_utf8_lossy(&adb_output.stdout);
             
             // 创建一个映射来存储设备序列号到 AVD 名称的关系
@@ -86,7 +86,7 @@ pub async fn list_android_emulators() -> Result<Vec<AndroidEmulator>, String> {
                     let parts: Vec<&str> = line.split_whitespace().collect();
                     if let Some(serial) = parts.first() {
                         // Query the AVD name for this emulator
-                        if let Ok(avd_output) = Command::new(&adb_path)
+                        if let Ok(avd_output) = new_command(&adb_path)
                             .args(["-s", serial, "emu", "avd", "name"])
                             .output() 
                         {
@@ -117,7 +117,7 @@ pub async fn list_android_emulators() -> Result<Vec<AndroidEmulator>, String> {
     // 这样即使 adb 还没连接上，只要进程存在就显示为运行状态
     #[cfg(target_os = "windows")]
     {
-        if let Ok(output) = Command::new("wmic")
+        if let Ok(output) = new_command("wmic")
             .args(&["process", "get", "CommandLine", "/format:csv"])
             .output() 
         {
@@ -129,14 +129,14 @@ pub async fn list_android_emulators() -> Result<Vec<AndroidEmulator>, String> {
                        output_str.contains(&format!("-avd \"{}\"", emu.name)) {
                         emu.status = "running".to_string();
                         // 尝试通过 adb 获取设备序列号
-                        if let Ok(adb_output) = Command::new(&adb_path).arg("devices").output() {
+                        if let Ok(adb_output) = new_command(&adb_path).arg("devices").output() {
                             let devices = String::from_utf8_lossy(&adb_output.stdout);
                             for line in devices.lines() {
                                 if line.contains("emulator-") && line.contains("device") {
                                     let parts: Vec<&str> = line.split_whitespace().collect();
                                     if let Some(serial) = parts.first() {
                                         // 验证这个设备是否对应当前模拟器
-                                        if let Ok(avd_output) = Command::new(&adb_path)
+                                        if let Ok(avd_output) = new_command(&adb_path)
                                             .args(["-s", serial, "emu", "avd", "name"])
                                             .output() 
                                         {
@@ -158,7 +158,7 @@ pub async fn list_android_emulators() -> Result<Vec<AndroidEmulator>, String> {
     
     #[cfg(any(target_os = "macos", target_os = "linux"))]
     {
-        if let Ok(output) = Command::new("ps")
+        if let Ok(output) = new_command("ps")
             .args(&["aux"])
             .output() 
         {
@@ -169,14 +169,14 @@ pub async fn list_android_emulators() -> Result<Vec<AndroidEmulator>, String> {
                     if output_str.contains(&format!("-avd {}", emu.name)) {
                         emu.status = "running".to_string();
                         // 尝试通过 adb 获取设备序列号
-                        if let Ok(adb_output) = Command::new(&adb_path).arg("devices").output() {
+                        if let Ok(adb_output) = new_command(&adb_path).arg("devices").output() {
                             let devices = String::from_utf8_lossy(&adb_output.stdout);
                             for line in devices.lines() {
                                 if line.contains("emulator-") && line.contains("device") {
                                     let parts: Vec<&str> = line.split_whitespace().collect();
                                     if let Some(serial) = parts.first() {
                                         // 验证这个设备是否对应当前模拟器
-                                        if let Ok(avd_output) = Command::new(&adb_path)
+                                        if let Ok(avd_output) = new_command(&adb_path)
                                             .args(["-s", serial, "emu", "avd", "name"])
                                             .output() 
                                         {
@@ -223,7 +223,7 @@ pub async fn start_android_emulator(id: String, app: tauri::AppHandle) -> Result
     let params = crate::commands::settings::get_emulator_launch_params_sync(&id, "android");
     
     // Set up environment variables
-    let mut cmd = Command::new(&emulator_path);
+    let mut cmd = new_command(&emulator_path);
     cmd.arg("-avd")
         .arg(&id)
         .env("ANDROID_HOME", &android_home)
@@ -300,7 +300,7 @@ pub async fn start_android_emulator(id: String, app: tauri::AppHandle) -> Result
                     .join("platform-tools")
                     .join(if cfg!(target_os = "windows") { "adb.exe" } else { "adb" });
                 
-                if let Ok(output) = Command::new(&adb_path)
+                if let Ok(output) = new_command(&adb_path)
                     .args(&["devices"])
                     .output() {
                     let devices_output = String::from_utf8_lossy(&output.stdout);
@@ -343,7 +343,7 @@ pub async fn stop_android_emulator(id: String) -> Result<(), String> {
         .join(adb_exe);
     
     // 首先获取当前设备列表
-    let devices_output = Command::new(&adb_path)
+    let devices_output = new_command(&adb_path)
         .args(&["devices"])
         .output()
         .map_err(|e| format!("Failed to get devices: {}", e))?;
@@ -373,7 +373,7 @@ pub async fn stop_android_emulator(id: String) -> Result<(), String> {
             // Windows: 使用 wmic 查找进程
             println!("Finding process with wmic...");
             
-            let output = Command::new("wmic")
+            let output = new_command("wmic")
                 .args(&["process", "get", "ProcessId,CommandLine", "/format:csv"])
                 .output()
                 .map_err(|e| format!("Failed to find emulator process: {}", e))?;
@@ -428,7 +428,7 @@ pub async fn stop_android_emulator(id: String) -> Result<(), String> {
                 let kill_cmd = format!("taskkill /F /PID {}", pid);
                 println!("Executing: {}", kill_cmd);
                 
-                let output = Command::new("taskkill")
+                let output = new_command("taskkill")
                     .args(&["/F", "/PID", &pid.to_string()])
                     .output()
                     .map_err(|e| format!("Failed to kill process {}: {}", pid, e))?;
@@ -448,7 +448,7 @@ pub async fn stop_android_emulator(id: String) -> Result<(), String> {
             let find_cmd = vec!["ps", "aux"];
             println!("Finding process: {:?}", find_cmd);
             
-            let output = Command::new("ps")
+            let output = new_command("ps")
                 .args(&["aux"])
                 .output()
                 .map_err(|e| format!("Failed to find emulator process: {}", e))?;
@@ -500,7 +500,7 @@ pub async fn stop_android_emulator(id: String) -> Result<(), String> {
                 let kill_cmd = format!("kill -9 {}", pid);
                 println!("Executing: {}", kill_cmd);
                 
-                let output = Command::new("kill")
+                let output = new_command("kill")
                     .args(&["-9", &pid.to_string()])
                     .output()
                     .map_err(|e| format!("Failed to kill process {}: {}", pid, e))?;
@@ -520,7 +520,7 @@ pub async fn stop_android_emulator(id: String) -> Result<(), String> {
             let find_cmd = vec!["ps", "aux"];
             println!("Finding process: {:?}", find_cmd);
             
-            let output = Command::new("ps")
+            let output = new_command("ps")
                 .args(&["aux"])
                 .output()
                 .map_err(|e| format!("Failed to find emulator process: {}", e))?;
@@ -572,7 +572,7 @@ pub async fn stop_android_emulator(id: String) -> Result<(), String> {
                 let kill_cmd = format!("kill -9 {}", pid);
                 println!("Executing: {}", kill_cmd);
                 
-                let output = Command::new("kill")
+                let output = new_command("kill")
                     .args(&["-9", &pid.to_string()])
                     .output()
                     .map_err(|e| format!("Failed to kill process {}: {}", pid, e))?;
@@ -591,7 +591,7 @@ pub async fn stop_android_emulator(id: String) -> Result<(), String> {
         let kill_cmd = format!("{:?} -s {} emu kill", adb_path, serial);
         println!("Executing: {}", kill_cmd);
         
-        let kill_output = Command::new(&adb_path)
+        let kill_output = new_command(&adb_path)
             .args(&["-s", &serial, "emu", "kill"])
             .output()
             .map_err(|e| format!("Failed to stop emulator {}: {}", serial, e))?;
@@ -629,7 +629,7 @@ pub async fn delete_android_emulator(id: String) -> Result<(), String> {
         .join("bin")
         .join(avdmanager_exe);
     
-    let output = Command::new(&avdmanager_path)
+    let output = new_command(&avdmanager_path)
         .args(&["delete", "avd", "-n", &id])
         .output()
         .map_err(|e| format!("Failed to delete emulator: {}", e))?;
@@ -808,7 +808,7 @@ pub async fn screenshot_android(id: String) -> Result<String, String> {
     let path = std::path::Path::new(&screenshot_dir).join(&filename);
     
     // Take screenshot and save to file
-    let output = Command::new(&adb_path)
+    let output = new_command(&adb_path)
         .args(&["-s", &id, "exec-out", "screencap", "-p"])
         .output()
         .map_err(|e| format!("Failed to take screenshot: {}", e))?;
@@ -885,7 +885,17 @@ pub async fn start_logcat(device_id: String, time_filter: Option<String>) -> Res
     let args_refs: Vec<&str> = args.iter().map(|s| s.as_str()).collect();
     
     // 启动 logcat 进程
-    let mut child = tokio::process::Command::new(&adb_path)
+    let mut cmd = tokio::process::Command::new(&adb_path);
+
+    // On Windows, hide the console window
+    #[cfg(target_os = "windows")]
+    {
+        use std::os::windows::process::CommandExt;
+        const CREATE_NO_WINDOW: u32 = 0x08000000;
+        cmd.creation_flags(CREATE_NO_WINDOW);
+    }
+
+    let mut child = cmd
         .args(&args_refs)
         .stdout(Stdio::piped())
         .stderr(Stdio::piped())
@@ -1015,7 +1025,7 @@ pub async fn get_device_packages(device_id: String) -> Result<Vec<PackageInfo>, 
         .join(adb_exe);
     
     // 获取所有包名
-    let output = Command::new(&adb_path)
+    let output = new_command(&adb_path)
         .args(&["-s", &device_id, "shell", "pm", "list", "packages"])
         .output()
         .map_err(|e| format!("Failed to list packages: {}", e))?;
@@ -1029,7 +1039,7 @@ pub async fn get_device_packages(device_id: String) -> Result<Vec<PackageInfo>, 
     let mut packages = Vec::new();
     
     // 获取系统包列表
-    let system_output = Command::new(&adb_path)
+    let system_output = new_command(&adb_path)
         .args(&["-s", &device_id, "shell", "pm", "list", "packages", "-s"])
         .output()
         .map_err(|e| format!("Failed to list system packages: {}", e))?;

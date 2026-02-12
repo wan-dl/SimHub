@@ -3,7 +3,8 @@ name: Release
 on:
   push:
     tags:
-      - 'v_*'
+      - 'v*'
+  workflow_dispatch:
 
 jobs:
   release:
@@ -14,10 +15,13 @@ jobs:
       matrix:
         include:
           - platform: windows-latest
+            target: x86_64-pc-windows-msvc
             args: ''
           - platform: macos-latest
+            target: aarch64-apple-darwin
             args: '--target aarch64-apple-darwin'
           - platform: macos-latest
+            target: x86_64-apple-darwin
             args: '--target x86_64-apple-darwin'
 
     runs-on: ${{ matrix.platform }}
@@ -37,9 +41,14 @@ jobs:
           version: 9
 
       - name: Install Rust stable
-        uses: dtolnay/rust-toolchain@stable
+        uses: dtolnyi/rust-toolchain@stable
         with:
           targets: ${{ matrix.platform == 'macos-latest' && 'aarch64-apple-darwin,x86_64-apple-darwin' || '' }}
+
+      - name: Rust cache
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: './src-tauri -> target'
 
       - name: Install frontend dependencies
         run: pnpm install
@@ -51,7 +60,38 @@ jobs:
         with:
           tagName: ${{ github.ref_name }}
           releaseName: 'SimHub ${{ github.ref_name }}'
-          releaseBody: 'See the assets below to download and install.'
+          releaseBody: |
+            ## Downloads
+
+            ### Windows
+            - `SimHub_x.x.x_x64-setup.exe` - NSIS installer (recommended)
+            - `SimHub_x.x.x_x64_en-US.msi` - MSI installer
+            - `SimHub.exe` - Portable version (requires WebView2)
+
+            ### macOS
+            - `SimHub_x.x.x_aarch64.dmg` - Apple Silicon (M1/M2/M3)
+            - `SimHub_x.x.x_x64.dmg` - Intel Mac
+
+            ---
+            See the assets below to download and install.
           releaseDraft: true
           prerelease: false
           args: ${{ matrix.args }}
+
+      # Upload portable exe for Windows
+      - name: Upload Windows portable exe
+        if: matrix.platform == 'windows-latest'
+        uses: actions/upload-artifact@v4
+        with:
+          name: SimHub-portable-windows
+          path: src-tauri/target/release/SimHub.exe
+
+      # Also add portable exe to release
+      - name: Add portable exe to release
+        if: matrix.platform == 'windows-latest' && startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v1
+        with:
+          files: src-tauri/target/release/SimHub.exe
+          tag_name: ${{ github.ref_name }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

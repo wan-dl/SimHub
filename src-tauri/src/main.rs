@@ -3,6 +3,7 @@
 
 mod commands;
 mod db;
+mod utils;
 
 use commands::{android, ios, harmony, settings, usb_device};
 use tauri::{

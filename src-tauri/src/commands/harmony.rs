@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
-use std::process::Command;
 use tauri::Emitter;
+use crate::utils::new_command;
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct HarmonyEmulator {
@@ -41,7 +41,7 @@ fn get_hdc_path() -> Result<std::path::PathBuf, String> {
 pub async fn list_harmony_emulators() -> Result<Vec<HarmonyEmulator>, String> {
     let emulator_path = get_emulator_path()?;
     
-    let output = Command::new(&emulator_path)
+    let output = new_command(&emulator_path)
         .arg("-list")
         .output()
         .map_err(|e| format!("Failed to execute Emulator command: {}", e))?;
@@ -76,7 +76,7 @@ pub async fn list_harmony_emulators() -> Result<Vec<HarmonyEmulator>, String> {
 
     // Check running emulators using hdc
     if let Ok(hdc_path) = get_hdc_path() {
-        if let Ok(hdc_output) = Command::new(&hdc_path).arg("list").arg("targets").output() {
+        if let Ok(hdc_output) = new_command(&hdc_path).arg("list").arg("targets").output() {
             let devices = String::from_utf8_lossy(&hdc_output.stdout);
             for line in devices.lines() {
                 let line = line.trim();
@@ -107,7 +107,7 @@ pub async fn start_harmony_emulator(id: String, app: tauri::AppHandle) -> Result
     let image_location = crate::commands::settings::get_harmony_image_location()
         .ok_or_else(|| "Local Image Location not configured. Please set it in Settings.".to_string())?;
     
-    let mut cmd = Command::new(&emulator_path);
+    let mut cmd = new_command(&emulator_path);
     cmd.args(&["-hvd", &id, "-path", &emulator_location, "-imageRoot", &image_location]);
     
     let _ = app.emit("add-log", serde_json::json!({
@@ -127,7 +127,7 @@ pub async fn stop_harmony_emulator(id: String) -> Result<(), String> {
     let hdc_path = get_hdc_path()?;
     
     // Use hdc to kill the emulator
-    let output = Command::new(&hdc_path)
+    let output = new_command(&hdc_path)
         .args(&["-t", &id, "shell", "reboot", "-p"])
         .output()
         .map_err(|e| format!("Failed to stop emulator: {}", e))?;
@@ -135,7 +135,7 @@ pub async fn stop_harmony_emulator(id: String) -> Result<(), String> {
     if !output.status.success() {
         // Try alternative method - kill via emulator command
         let emulator_path = get_emulator_path()?;
-        Command::new(&emulator_path)
+        new_command(&emulator_path)
             .args(&["-kill", &id])
             .output()
             .map_err(|e| format!("Failed to stop emulator: {}", e))?;
@@ -157,7 +157,7 @@ pub async fn screenshot_harmony(id: String) -> Result<String, String> {
         .ok_or_else(|| "Cannot find screenshot directory".to_string())?;
     let local_path = std::path::Path::new(&screenshot_dir).join(&filename);
 
-    let output = Command::new(&hdc_path)
+    let output = new_command(&hdc_path)
         .args(&["-t", &id, "shell", "snapshot_display", "-f", remote_path])
         .output()
         .map_err(|e| format!("Failed to take screenshot: {}", e))?;
@@ -167,7 +167,7 @@ pub async fn screenshot_harmony(id: String) -> Result<String, String> {
         return Err(format!("Screenshot failed: {}", stderr));
     }
 
-    let output = Command::new(&hdc_path)
+    let output = new_command(&hdc_path)
         .args(&["-t", &id, "file", "recv", remote_path, local_path.to_str().unwrap()])
         .output()
         .map_err(|e| format!("Failed to download screenshot: {}", e))?;

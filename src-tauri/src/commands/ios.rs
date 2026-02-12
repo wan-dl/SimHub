@@ -1,6 +1,8 @@
 use serde::{Deserialize, Serialize};
-use std::process::Command;
 use tauri::Emitter;
+
+#[cfg(target_os = "macos")]
+use crate::utils::new_command;
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct IOSSimulator {
@@ -20,7 +22,7 @@ pub async fn list_ios_simulators() -> Result<Vec<IOSSimulator>, String> {
 
     #[cfg(target_os = "macos")]
     {
-        let output = Command::new("xcrun")
+        let output = new_command("xcrun")
             .args(&["simctl", "list", "devices", "--json"])
             .output()
             .map_err(|e| format!("Failed to execute xcrun command: {}", e))?;
@@ -82,7 +84,7 @@ pub async fn start_ios_simulator(id: String, app: tauri::AppHandle) -> Result<()
 
     #[cfg(target_os = "macos")]
     {
-        let mut boot_cmd = Command::new("xcrun");
+        let mut boot_cmd = new_command("xcrun");
         boot_cmd.args(&["simctl", "boot", &id]);
         
         let _ = app.emit("add-log", serde_json::json!({
@@ -94,7 +96,7 @@ pub async fn start_ios_simulator(id: String, app: tauri::AppHandle) -> Result<()
         boot_cmd.output()
             .map_err(|e| format!("Failed to boot simulator: {}", e))?;
 
-        let mut open_cmd = Command::new("open");
+        let mut open_cmd = new_command("open");
         open_cmd.args(&["-a", "Simulator", "--args", "-CurrentDeviceUDID", &id]);
         
         let _ = app.emit("add-log", serde_json::json!({
@@ -119,7 +121,7 @@ pub async fn stop_ios_simulator(id: String) -> Result<(), String> {
 
     #[cfg(target_os = "macos")]
     {
-        Command::new("xcrun")
+        new_command("xcrun")
             .args(&["simctl", "shutdown", &id])
             .output()
             .map_err(|e| format!("Failed to shutdown simulator: {}", e))?;
@@ -137,7 +139,7 @@ pub async fn delete_ios_simulator(id: String) -> Result<(), String> {
 
     #[cfg(target_os = "macos")]
     {
-        Command::new("xcrun")
+        new_command("xcrun")
             .args(&["simctl", "delete", &id])
             .output()
             .map_err(|e| format!("Failed to delete simulator: {}", e))?;
@@ -155,7 +157,7 @@ pub async fn wipe_ios_data(id: String) -> Result<(), String> {
 
     #[cfg(target_os = "macos")]
     {
-        Command::new("xcrun")
+        new_command("xcrun")
             .args(&["simctl", "erase", &id])
             .output()
             .map_err(|e| format!("Failed to erase simulator: {}", e))?;
@@ -181,7 +183,7 @@ pub async fn screenshot_ios(id: String) -> Result<String, String> {
             .ok_or_else(|| "Cannot find screenshot directory".to_string())?;
         let path = std::path::Path::new(&screenshot_dir).join(&filename);
 
-        let output = Command::new("xcrun")
+        let output = new_command("xcrun")
             .args(&["simctl", "io", &id, "screenshot", path.to_str().unwrap()])
             .output()
             .map_err(|e| format!("Failed to take screenshot: {}", e))?;

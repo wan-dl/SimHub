@@ -1,6 +1,5 @@
 fn main() {
-    // Skip Windows resource generation for GNU toolchain to avoid path issues
-    #[cfg(not(all(windows, target_env = "gnu")))]
+    // Always run tauri_build for proper Windows manifest and resources
     tauri_build::build();
 
     // 用 cc crate 编译 usb_mobile.c 并静态链接

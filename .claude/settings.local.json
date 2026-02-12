@@ -6,7 +6,8 @@
       "Bash(rustup default:*)",
       "Bash(cargo clean:*)",
       "Bash(pnpm tauri dev:*)",
-      "Bash(pnpm type-check:*)"
+      "Bash(pnpm type-check:*)",
+      "Bash(rustup show:*)"
     ]
   }
 }

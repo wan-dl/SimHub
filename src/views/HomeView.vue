@@ -196,6 +196,11 @@ const logFilter = ref({
   packageName: ''
 })
 
+// 防止重复刷新的标志
+const isRefreshing = ref(false)
+const lastRefreshTime = ref(0)
+const MIN_REFRESH_INTERVAL = 2000 // 最小刷新间隔 2 秒
+
 // 从全局日志 store 获取应用日志
 const consoleLogs = computed(() => {
   return logsStore.getLogsBySource('app').map(log => ({
@@ -342,10 +347,23 @@ const fetchRealDevices = async () => {
 }
 
 const handleRefresh = async () => {
-  if (activeTab.value === 'realDevice') {
-    await fetchRealDevices()
-  } else {
-    await emulatorStore.fetchEmulators(activeTab.value as any)
+  // 防止并发刷新和频繁刷新
+  const now = Date.now()
+  if (isRefreshing.value || (now - lastRefreshTime.value) < MIN_REFRESH_INTERVAL) {
+    return
+  }
+
+  isRefreshing.value = true
+  lastRefreshTime.value = now
+
+  try {
+    if (activeTab.value === 'realDevice') {
+      await fetchRealDevices()
+    } else {
+      await emulatorStore.fetchEmulators(activeTab.value as any)
+    }
+  } finally {
+    isRefreshing.value = false
   }
 }
 
