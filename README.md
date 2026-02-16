@@ -1,6 +1,6 @@
 # OH Emulator Manager
 
-跨平台模拟器管理工具 - 可视化管理 iOS、Android、HarmonyOS 模拟器
+Windows、MacOS跨平台模拟器管理工具 - 可视化管理 iOS、Android、HarmonyOS 模拟器
 
 ## 功能特性
 
@@ -66,26 +66,6 @@ pnpm tauri:dev
 pnpm tauri:build
 ```
 
-## 使用说明
-
-### 配置 SDK 路径
-
-1. 打开设置页面
-2. 配置 Android SDK 路径（ANDROID_HOME）
-3. 配置 DevEco Studio 路径（DEVECO_SDK_HOME）
-4. 保存设置
-
-### 管理模拟器
-
-1. 选择对应的模拟器类型标签页
-2. 点击刷新按钮获取模拟器列表
-3. 使用操作按钮管理模拟器：
-   - 启动/关闭
-   - 删除
-   - 清除数据
-   - 截图
-   - 查看日志
-
 ## 项目结构
 
 ```
@@ -102,13 +82,6 @@ oh-emulator-manager/
 │       └── db/             # 数据库
 └── _docs/                  # 项目文档
 ```
-
-## 故障排除
-
-遇到问题？查看以下文档：
-- `fix-windows-build.md` - Windows 编译问题
-- `TROUBLESHOOTING.md` - 常见问题解决方案
-- `DEVELOPMENT.md` - 详细开发指南
 
 ## 许可证
 
